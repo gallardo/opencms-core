@@ -3,6 +3,25 @@ apply plugin: 'java'
 apply plugin: 'maven'
 apply plugin: 'signing'
 
+// This plugin adds a taskTree task that prints task dependency tree report
+// to the console.
+// The task dependency tree is printed with a similar format to that of the
+// built-in dependencies task.
+//
+// (See https://github.com/dorongold/gradle-task-tree)
+buildscript {
+    repositories {
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+    }
+    dependencies {
+        classpath "gradle.plugin.com.dorongold.plugins:task-tree:1.2.2"
+    }
+}
+
+apply plugin: "com.dorongold.task-tree"
+
 sourceCompatibility = java_target_version
 targetCompatibility = java_target_version
 buildDir = build_directory
