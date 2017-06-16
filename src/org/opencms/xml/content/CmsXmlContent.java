@@ -930,10 +930,13 @@ public class CmsXmlContent extends A_CmsXmlDocument {
         try {
             return CmsXmlContentDefinition.unmarshal(schemaLocation, resolver);
         } catch (SAXException e) {
+            LOG.debug(e);
             throw new CmsRuntimeException(Messages.get().container(Messages.ERR_XML_SCHEMA_PARSE_1, schemaLocation), e);
         } catch (IOException e) {
+            LOG.debug(e);
             throw new CmsRuntimeException(Messages.get().container(Messages.ERR_XML_SCHEMA_IO_1, schemaLocation), e);
         } catch (CmsXmlException e) {
+            LOG.debug(e);
             throw new CmsRuntimeException(
                 Messages.get().container(Messages.ERR_XMLCONTENT_UNMARSHAL_1, schemaLocation),
                 e);

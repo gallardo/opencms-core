@@ -870,13 +870,16 @@ public class CmsXmlContentDefinition implements Cloneable {
      *
      * @return a XML content definition instance unmarshalled from the XML document
      *
-     * @throws CmsXmlException if something goes wrong
+     * @throws CmsXmlException if {@code document} is {@null}, or if something else goes wrong
      */
     private static CmsXmlContentDefinition unmarshalInternal(
         Document document,
         String schemaLocation,
         EntityResolver resolver)
     throws CmsXmlException {
+        if (null==document) {
+            throw new CmsXmlException(Messages.get().container(Messages.ERR_UNMARSHALLING_XML_DOC_1, "(source == null)"));
+        }
 
         // analyze the document and generate the XML content type definition
         Element root = document.getRootElement();
@@ -906,16 +909,16 @@ public class CmsXmlContentDefinition implements Cloneable {
             for (int i = 1; i < includes.size(); i++) {
 
                 Element inc = includes.get(i);
-                String schemaLoc = validateAttribute(inc, XSD_ATTRIBUTE_SCHEMA_LOCATION, null);
-                if (!(schemaLoc.equals(schemaLocation))) {
+                String nestedSchemaLoc = validateAttribute(inc, XSD_ATTRIBUTE_SCHEMA_LOCATION, null);
+                if (!(nestedSchemaLoc.equals(schemaLocation))) {
                     InputSource source = null;
                     try {
-                        source = resolver.resolveEntity(null, schemaLoc);
+                        source = resolver.resolveEntity(null, nestedSchemaLoc);
+                        CmsXmlContentDefinition xmlContentDefinition = unmarshal(source, nestedSchemaLoc, resolver);
+                        nestedDefinitions.add(xmlContentDefinition);
                     } catch (Exception e) {
-                        throw new CmsXmlException(Messages.get().container(Messages.ERR_CD_BAD_INCLUDE_1, schemaLoc));
+                        throw new CmsXmlException(Messages.get().container(Messages.ERR_CD_BAD_INCLUDE_1, nestedSchemaLoc));
                     }
-                    CmsXmlContentDefinition xmlContentDefinition = unmarshal(source, schemaLoc, resolver);
-                    nestedDefinitions.add(xmlContentDefinition);
                 } else {
                     // recursion
                     recursive = true;

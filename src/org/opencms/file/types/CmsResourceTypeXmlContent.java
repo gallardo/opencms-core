@@ -334,7 +334,7 @@ public class CmsResourceTypeXmlContent extends A_CmsResourceTypeLinkParseable {
                             m_schema,
                             getTypeName()));
                 }
-            } catch (Throwable e) {
+            } catch (Exception e) {
                 // unable to unmarshal the XML schema configured
                 LOG.error(Messages.get().getBundle().key(Messages.ERR_BAD_XML_SCHEMA_2, m_schema, getTypeName()), e);
             }

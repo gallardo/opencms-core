@@ -40,9 +40,7 @@ import java.io.StringReader;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.List;
-
 import org.apache.commons.logging.Log;
-
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.dom4j.Node;
@@ -56,6 +54,7 @@ import org.xml.sax.SAXNotRecognizedException;
 import org.xml.sax.SAXNotSupportedException;
 import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.XMLReaderFactory;
+
 
 /**
  * Provides some basic XML handling utilities.<p>
@@ -648,7 +647,7 @@ public final class CmsXmlUtils {
      * @param source the XML input source to use
      * @param resolver the XML entity resolver to use
      *
-     * @return the unmarshalled XML document
+     * @return the unmarshalled XML document or {@code null} if {@code source} is {@code null}
      *
      * @throws CmsXmlException if something goes wrong
      */
@@ -671,12 +670,16 @@ public final class CmsXmlUtils {
      * @param resolver the XML entity resolver to use
      * @param validate if the reader should try to validate the xml code
      *
-     * @return the unmarshalled XML document
+     * @return the unmarshalled XML document or {@code null} if {@code source} is {@code null}
      *
      * @throws CmsXmlException if something goes wrong
      */
     public static Document unmarshalHelper(InputSource source, EntityResolver resolver, boolean validate)
-    throws CmsXmlException {
+            throws CmsXmlException {
+
+        if (null == source) {
+            return null;
+        }
 
         try {
             SAXReader reader = new SAXReader();
@@ -708,7 +711,7 @@ public final class CmsXmlUtils {
     /**
      * Helper to unmarshal (read) xml contents from a String into a document.<p>
      *
-     * Using this method ensures that the OpenCms XML entitiy resolver is used.<p>
+     * Using this method ensures that the OpenCms XML entity resolver is used.<p>
      *
      * @param xmlData the xml data in a String
      * @param resolver the XML entity resolver to use
