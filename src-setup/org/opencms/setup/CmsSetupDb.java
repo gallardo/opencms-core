@@ -519,7 +519,9 @@ public class CmsSetupDb extends Object {
             System.out.println("Class not found exception: " + e);
             m_errors.add(Messages.get().getBundle().key(Messages.ERR_LOAD_JDBC_DRIVER_1, DbDriver));
             m_errors.add(CmsException.getStackTraceAsString(e));
+            LOG.error("Class not found: " + e.getLocalizedMessage() + ". Hint: Missing driver?", e);
         } catch (Exception e) {
+            LOG.error("Cannot get database connection: " + e.getLocalizedMessage(), e);
             if (logErrors) {
                 System.out.println("Exception: " + CmsException.getStackTraceAsString(e));
             }
@@ -692,11 +694,13 @@ public class CmsSetupDb extends Object {
                 statement += " \n";
             }
         } catch (SQLException e) {
+            LOG.error("Error executing SQL statement: " + e.getLocalizedMessage(), e);
             if (m_errorLogging) {
                 m_errors.add("Error executing SQL statement: " + statement);
                 m_errors.add(CmsException.getStackTraceAsString(e));
             }
         } catch (Exception e) {
+            LOG.error("Error parsing database setup SQL script in line '" + line + "':" + e.getLocalizedMessage(), e);
             if (m_errorLogging) {
                 m_errors.add("Error parsing database setup SQL script in line: " + line);
                 m_errors.add(CmsException.getStackTraceAsString(e));
@@ -732,6 +736,7 @@ public class CmsSetupDb extends Object {
                 + databaseKey
                 + File.separator
                 + sqlScript;
+            LOG.debug("Executing " + filename);
             executeSql(new FileReader(filename), replacers, abortOnError);
         } catch (FileNotFoundException e) {
             if (m_errorLogging) {
@@ -749,8 +754,12 @@ public class CmsSetupDb extends Object {
      * @throws SQLException if something goes wrong
      */
     private void executeStatement(String statement) throws SQLException {
-
+        LOG.debug("Executing statement:\n" + statement);
         Statement stmt = null;
+        if (null == m_con) {
+            LOG.error("Connection closed when trying to execute statement:\n" + statement);
+            return;
+        }
 
         try {
             stmt = m_con.createStatement();

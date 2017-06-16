@@ -2169,7 +2169,7 @@ public class CmsSetupBean implements I_CmsShellCommands {
                     setDbProperty(getDatabase() + ".indexTablespace", dbIndexTablespace);
                 }
                 Map<String, String> replacer = new HashMap<String, String>();
-                if (!provider.equals(MYSQL_PROVIDER) || provider.equals(MSSQL_PROVIDER)) {
+                if (!provider.equals(MSSQL_PROVIDER)) {
                     replacer.put("${user}", dbWorkUser);
                     replacer.put("${password}", dbWorkPwd);
                 }

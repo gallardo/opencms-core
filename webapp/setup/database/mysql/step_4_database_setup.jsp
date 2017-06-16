@@ -24,6 +24,16 @@ Alkacon OpenCms Setup Wizard
 			document.forms[0].dbCreateConStr.focus();
 			return false;
 		}
+		else if (document.forms[0].dbWorkUser.value == "")	{
+			alert("Please provide a User name");
+			document.forms[0].dbWorkUser.focus();
+			return false;
+		}
+		else if (document.forms[0].dbWorkPwd.value == "")	{
+			alert("Please provide a password");
+			document.forms[0].dbWorkPwd.focus();
+			return false;
+		}
 		else if (document.forms[0].db.value == "")	{
 			alert("Please insert a Database name");
 			document.forms[0].db.focus();
