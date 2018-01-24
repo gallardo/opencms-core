@@ -1296,13 +1296,14 @@ public class CmsProjectDriver implements I_CmsDriver, I_CmsProjectDriver {
                     }
                 }
             } else {
-                // state == unchanged !!?? something went really wrong
+                // Unexpected state == unchanged. Something went wrong. Duplicated entry?
                 report.print(Messages.get().container(Messages.RPT_PUBLISH_FILE_0), I_CmsReport.FORMAT_NOTE);
                 report.print(
                     org.opencms.report.Messages.get().container(
                         org.opencms.report.Messages.RPT_ARGUMENT_1,
                         dbc.removeSiteRoot(offlineResource.getRootPath())));
                 report.print(org.opencms.report.Messages.get().container(org.opencms.report.Messages.RPT_DOTS_0));
+                report.print(Messages.get().container(Messages.RPT_PUBLISH_UNCHANGED_0));
                 report.println(
                     org.opencms.report.Messages.get().container(org.opencms.report.Messages.RPT_FAILED_0),
                     I_CmsReport.FORMAT_ERROR);

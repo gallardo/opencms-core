@@ -460,6 +460,9 @@ public final class Messages extends A_CmsMessageBundle {
     /** Message constant for key in the resource bundle. */
     public static final String RPT_PUBLISH_STAT_4 = "RPT_PUBLISH_STAT_4";
 
+    /** Message constant for key in the resource bundle. */
+    public static final String RPT_PUBLISH_UNCHANGED_0 = "RPT_PUBLISH_UNCHANGED_0";
+
     /** Name of the used resource bundle. */
     private static final String BUNDLE_NAME = "org.opencms.db.generic.messages";
 
