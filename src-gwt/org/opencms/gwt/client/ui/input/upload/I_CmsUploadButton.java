@@ -52,4 +52,12 @@ public interface I_CmsUploadButton {
      * @param buttonHandler the button handler
      */
     void reinitButton(I_CmsUploadButtonHandler buttonHandler);
+
+    /**
+     * Enables / disables the button.
+     *
+     * @param enabled true if the button should be enabled
+     * @param disabledMessage the message to display for disabled buttons
+     */
+    void setEnabled(boolean enabled, String disabledMessage);
 }

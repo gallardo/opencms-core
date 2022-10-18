@@ -81,7 +81,6 @@ import org.opencms.gwt.CmsIconUtil;
 import org.opencms.gwt.CmsPropertyEditorHelper;
 import org.opencms.gwt.CmsRpcException;
 import org.opencms.gwt.CmsTemplateFinder;
-import org.opencms.gwt.shared.CmsBrokenLinkBean;
 import org.opencms.gwt.shared.CmsCategoryTreeEntry;
 import org.opencms.gwt.shared.CmsClientLock;
 import org.opencms.gwt.shared.CmsCoreData;
@@ -1185,27 +1184,6 @@ public class CmsVfsSitemapService extends CmsGwtService implements I_CmsSitemapS
     }
 
     /**
-     * Creates a "broken link" bean based on a resource.<p>
-     *
-     * @param resource the resource
-     *
-     * @return the "broken link" bean with the data from the resource
-     *
-     * @throws CmsException if something goes wrong
-     */
-    protected CmsBrokenLinkBean createSitemapBrokenLinkBean(CmsResource resource) throws CmsException {
-
-        CmsObject cms = getCmsObject();
-        CmsProperty titleProp = cms.readPropertyObject(resource, CmsPropertyDefinition.PROPERTY_TITLE, true);
-        String defaultTitle = "";
-        String title = titleProp.getValue(defaultTitle);
-        String path = cms.getSitePath(resource);
-        String subtitle = path;
-        return new CmsBrokenLinkBean(resource.getStructureId(), title, subtitle);
-
-    }
-
-    /**
      * Locks the given resource with a temporary, if not already locked by the current user.
      * Will throw an exception if the resource could not be locked for the current user.<p>
      *
@@ -1899,32 +1877,36 @@ public class CmsVfsSitemapService extends CmsGwtService implements I_CmsSitemapS
                     CmsContainerPageWrapper wrapper = new CmsContainerPageWrapper(cms, page);
                     if (isFunctionDetail) {
                         String functionDetailContainer = getFunctionDetailContainerName(parentFolder);
-                        CmsUUID functionStructureId = new CmsUUID(change.getCreateParameter());
-                        CmsResource functionRes = cms.readResource(
-                            functionStructureId,
-                            CmsResourceFilter.IGNORE_EXPIRATION);
-                        CmsResource functionFormatter;
-                        if (OpenCms.getResourceManager().matchResourceType(
-                            CmsResourceTypeFunctionConfig.TYPE_NAME,
-                            functionRes.getTypeId())) {
-                            functionFormatter = cms.readResource(CmsResourceTypeFunctionConfig.FORMATTER_PATH);
-                        } else {
-                            functionFormatter = cms.readResource(
-                                CmsResourceTypeFunctionConfig.FORMATTER_PATH,
-                                CmsResourceFilter.ONLY_VISIBLE_NO_DELETED);
-                        }
-                        if (!wrapper.addElementToContainer(
-                            functionDetailContainer,
-                            new CmsContainerElementBean(
+                        if (functionDetailContainer != null) {
+                            CmsUUID functionStructureId = new CmsUUID(change.getCreateParameter());
+                            CmsResource functionRes = cms.readResource(
                                 functionStructureId,
-                                functionFormatter.getStructureId(),
-                                new HashMap<>(),
-                                false))) {
+                                CmsResourceFilter.IGNORE_EXPIRATION);
+                            CmsResource functionFormatter;
+                            if (OpenCms.getResourceManager().matchResourceType(
+                                CmsResourceTypeFunctionConfig.TYPE_NAME,
+                                functionRes.getTypeId())) {
+                                functionFormatter = cms.readResource(CmsResourceTypeFunctionConfig.FORMATTER_PATH);
+                            } else {
+                                functionFormatter = cms.readResource(
+                                    CmsResourceTypeFunctionConfig.FORMATTER_PATH,
+                                    CmsResourceFilter.ONLY_VISIBLE_NO_DELETED);
+                            }
+                            if (!wrapper.addElementToContainer(
+                                functionDetailContainer,
+                                new CmsContainerElementBean(
+                                    functionStructureId,
+                                    functionFormatter.getStructureId(),
+                                    new HashMap<>(),
+                                    false))) {
 
-                            throw new CmsException(
-                                Messages.get().container(
-                                    Messages.ERR_NO_FUNCTION_DETAIL_CONTAINER_1,
-                                    page.getFile().getRootPath()));
+                                throw new CmsException(
+                                    Messages.get().container(
+                                        Messages.ERR_NO_FUNCTION_DETAIL_CONTAINER_1,
+                                        page.getFile().getRootPath()));
+                            }
+                        } else {
+                            LOG.debug("function detail container is null for " + parentFolder.getRootPath());
                         }
                     }
                     createNewContainerElements(cms, wrapper.page(), entryPath);

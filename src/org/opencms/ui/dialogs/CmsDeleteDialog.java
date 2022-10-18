@@ -46,12 +46,17 @@ import org.opencms.ui.A_CmsUI;
 import org.opencms.ui.CmsVaadinUtils;
 import org.opencms.ui.I_CmsDialogContext;
 import org.opencms.ui.components.CmsBasicDialog;
+import org.opencms.ui.components.CmsGwtContextMenuButton;
 import org.opencms.ui.components.CmsOkCancelActionHandler;
 import org.opencms.ui.components.CmsResourceInfo;
+import org.opencms.ui.components.OpenCmsTheme;
+import org.opencms.ui.shared.rpc.I_CmsGwtContextMenuServerRpc;
 import org.opencms.util.CmsUUID;
 import org.opencms.workplace.commons.Messages;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -145,6 +150,8 @@ public class CmsDeleteDialog extends CmsBasicDialog {
                 cancel();
             }
         });
+
+        m_okButton.addStyleName(OpenCmsTheme.BUTTON_RED);
 
         m_okButton.addClickListener(new ClickListener() {
 
@@ -276,10 +283,21 @@ public class CmsDeleteDialog extends CmsBasicDialog {
      */
     void displayBrokenLinks() {
 
+        I_CmsGwtContextMenuServerRpc rpc = new I_CmsGwtContextMenuServerRpc() {
+
+            public void refresh(String id) {
+
+                if (id != null) {
+                    m_context.finish(Arrays.asList(new CmsUUID(id)));
+                } else {
+                    m_context.finish(Collections.emptyList());
+                }
+            }
+        };
         CmsObject cms = A_CmsUI.getCmsObject();
         m_resourceBox.removeAllComponents();
-        m_deleteResource.setValue(
-            CmsVaadinUtils.getMessageText(org.opencms.workplace.commons.Messages.GUI_DELETE_MULTI_CONFIRMATION_0));
+        m_resourceBox.addStyleName("o-broken-links");
+        m_deleteResource.setVisible(false);
         m_okButton.setVisible(true);
         boolean canIgnoreBrokenLinks = OpenCms.getWorkplaceManager().getDefaultUserSettings().isAllowBrokenRelations()
             || OpenCms.getRoleManager().hasRole(cms, CmsRole.VFS_MANAGER);
@@ -295,15 +313,22 @@ public class CmsDeleteDialog extends CmsBasicDialog {
                 m_resourceBox.addComponent(new Label(noLinksBroken));
             } else {
                 if (!canIgnoreBrokenLinks) {
+                    m_deleteResource.setVisible(true);
                     m_deleteResource.setValue(
                         CmsVaadinUtils.getMessageText(
                             org.opencms.workplace.commons.Messages.GUI_DELETE_RELATIONS_NOT_ALLOWED_0));
                     m_okButton.setVisible(false);
                 }
                 for (CmsResource source : brokenLinks.keySet()) {
-                    m_resourceBox.addComponent(new CmsResourceInfo(source));
+                    CmsResourceInfo parentInfo = new CmsResourceInfo(source);
+                    CmsGwtContextMenuButton contextMenu = new CmsGwtContextMenuButton(source.getStructureId(), rpc);
+                    contextMenu.addStyleName("o-gwt-contextmenu-button-margin");
+                    parentInfo.setButtonWidget(contextMenu);
+                    m_resourceBox.addComponent(parentInfo);
                     for (CmsResource target : brokenLinks.get(source)) {
-                        m_resourceBox.addComponent(indent(new CmsResourceInfo(target)));
+                        CmsResourceInfo childInfo = new CmsResourceInfo(target);
+                        childInfo.addStyleName("o-deleted");
+                        m_resourceBox.addComponent(indent(childInfo));
                     }
 
                 }

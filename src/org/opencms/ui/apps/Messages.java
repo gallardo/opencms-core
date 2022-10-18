@@ -54,9 +54,6 @@ public final class Messages extends A_CmsMessageBundle {
     public static final String ERR_SERVER_URL_NOT_EMPTY_0 = "ERR_SERVER_URL_NOT_EMPTY_0";
 
     /** Message constant for key in the resource bundle. */
-    public static final String GUI_DATABASEAPP_EXPORT_SKIP_PARENT_FOLDERS_0 = "GUI_DATABASEAPP_EXPORT_SKIP_PARENT_FOLDERS_0";
-
-    /** Message constant for key in the resource bundle. */
     public static final String ERR_SQLCONSOLE_NO_PERMISSIONS_EXEC_SENTENCE_1 = "ERR_SQLCONSOLE_NO_PERMISSIONS_EXEC_SENTENCE_1";
 
     /** Message constant for key in the resource bundle. */
@@ -79,9 +76,9 @@ public final class Messages extends A_CmsMessageBundle {
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_CACHE_CLEAN_0 = "GUI_CACHE_CLEAN_0";
+
     /** Message constant for key in the resource bundle. */
     public static final String GUI_CACHE_CLEAN_CONFIRM_0 = "GUI_CACHE_CLEAN_CONFIRM_0";
-
     /** Message constant for key in the resource bundle. */
     public static final String GUI_CACHE_CLEAN_FLEX_CLEAR_MODE_0 = "GUI_CACHE_CLEAN_FLEX_CLEAR_MODE_0";
 
@@ -429,6 +426,9 @@ public final class Messages extends A_CmsMessageBundle {
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_DATABASEAPP_EXPORT_SETTINGS_BLOCK_0 = "GUI_DATABASEAPP_EXPORT_SETTINGS_BLOCK_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_DATABASEAPP_EXPORT_SKIP_PARENT_FOLDERS_0 = "GUI_DATABASEAPP_EXPORT_SKIP_PARENT_FOLDERS_0";
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_DATABASEAPP_EXPORT_START_0 = "GUI_DATABASEAPP_EXPORT_START_0";
@@ -2460,6 +2460,15 @@ public final class Messages extends A_CmsMessageBundle {
     public static final String GUI_SITE_POSITION_0 = "GUI_SITE_POSITION_0";
 
     /** Message constant for key in the resource bundle. */
+    public static final String GUI_SITE_REDIRECT_MODE_NONE_0 = "GUI_SITE_REDIRECT_MODE_NONE_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_SITE_REDIRECT_MODE_PERMANENT_0 = "GUI_SITE_REDIRECT_MODE_PERMANENT_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_SITE_REDIRECT_MODE_TEMPORARY_0 = "GUI_SITE_REDIRECT_MODE_TEMPORARY_0";
+
+    /** Message constant for key in the resource bundle. */
     public static final String GUI_SITE_REMOVE_ALIAS_0 = "GUI_SITE_REMOVE_ALIAS_0";
 
     /** Message constant for key in the resource bundle. */
@@ -2844,6 +2853,12 @@ public final class Messages extends A_CmsMessageBundle {
     public static final String GUI_USER_INFO_TITLE_0 = "GUI_USER_INFO_TITLE_0";
 
     /** Message constant for key in the resource bundle. */
+    public static final String GUI_USERMANAGEMENT_2FA_NOT_SET_UP_0 = "GUI_USERMANAGEMENT_2FA_NOT_SET_UP_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_USERMANAGEMENT_2FA_USED_0 = "GUI_USERMANAGEMENT_2FA_USED_0";
+
+    /** Message constant for key in the resource bundle. */
     public static final String GUI_USERMANAGEMENT_ADD_ELEMENT_0 = "GUI_USERMANAGEMENT_ADD_ELEMENT_0";
 
     /** Message constant for key in the resource bundle. */
@@ -3097,6 +3112,9 @@ public final class Messages extends A_CmsMessageBundle {
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_USERMANAGEMENT_REMOVE_USER_FROM_ROLE_CONFIRM_2 = "GUI_USERMANAGEMENT_REMOVE_USER_FROM_ROLE_CONFIRM_2";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_USERMANAGEMENT_RESET_2FA_0 = "GUI_USERMANAGEMENT_RESET_2FA_0";
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_USERMANAGEMENT_ROLES_0 = "GUI_USERMANAGEMENT_ROLES_0";

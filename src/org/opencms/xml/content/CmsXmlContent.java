@@ -89,6 +89,9 @@ public class CmsXmlContent extends A_CmsXmlDocument {
     /** The name of the XML content auto correction runtime attribute, this must always be a Boolean. */
     public static final String AUTO_CORRECTION_ATTRIBUTE = CmsXmlContent.class.getName() + ".autoCorrectionEnabled";
 
+    /** The name of the version attribute. */
+    public static final String A_VERSION = "version";
+
     /** The property to set to enable xerces schema validation. */
     public static final String XERCES_SCHEMA_PROPERTY = "http://apache.org/xml/properties/schema/external-noNamespaceSchemaLocation";
 
@@ -111,6 +114,9 @@ public class CmsXmlContent extends A_CmsXmlDocument {
 
     /** The XML content definition object (i.e. XML schema) used by this content. */
     protected CmsXmlContentDefinition m_contentDefinition;
+
+    /** Flag which records whether a version transformation was used when this content object was created. */
+    private boolean m_isTransformedVersion;
 
     /**
      * Hides the public constructor.<p>
@@ -137,8 +143,21 @@ public class CmsXmlContent extends A_CmsXmlDocument {
 
         // for the next line to work the document must already be available
         m_contentDefinition = getContentDefinition(resolver);
+        if (getSchemaVersion() < m_contentDefinition.getVersion()) {
+            m_document = CmsVersionTransformer.transformDocumentToCurrentVersion(cms, document, m_contentDefinition);
+            m_isTransformedVersion = true;
+        }
+
         // initialize the XML content structure
         initDocument(cms, m_document, encoding, m_contentDefinition);
+        if (m_isTransformedVersion) {
+            visitAllValuesWith(value -> {
+                if (value.isSimpleType()) {
+                    // make sure values are in 'correct' format (e.g. using CDATA for text content)
+                    value.setStringValue(cms, value.getStringValue(cms));
+                }
+            });
+        }
     }
 
     /**
@@ -552,6 +571,16 @@ public class CmsXmlContent extends A_CmsXmlDocument {
     }
 
     /**
+     * Gets the schema version (or 0 if no schema version is set).
+     *
+     * @return the schema version
+     */
+    public int getSchemaVersion() {
+
+        return CmsXmlUtils.getSchemaVersion(m_document);
+    }
+
+    /**
      * Returns all simple type values below a given path.<p>
      *
      * @param elementPath the element path
@@ -704,6 +733,16 @@ public class CmsXmlContent extends A_CmsXmlDocument {
         }
         return false;
 
+    }
+
+    /**
+     * Checks if a version transformation was used when creating this content object.
+     *
+     * @return true if a version transformation was used when creating this content object
+     */
+    public boolean isTransformedVersion() {
+
+        return m_isTransformedVersion;
     }
 
     /**
@@ -1217,4 +1256,5 @@ public class CmsXmlContent extends A_CmsXmlDocument {
             }
         }
     }
+
 }

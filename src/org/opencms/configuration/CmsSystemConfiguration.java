@@ -61,9 +61,11 @@ import org.opencms.security.I_CmsAuthorizationHandler;
 import org.opencms.security.I_CmsCredentialsResolver;
 import org.opencms.security.I_CmsPasswordHandler;
 import org.opencms.security.I_CmsValidationHandler;
+import org.opencms.security.twofactor.CmsTwoFactorAuthenticationConfig;
 import org.opencms.util.CmsStringUtil;
 import org.opencms.workflow.CmsDefaultWorkflowManager;
 import org.opencms.workflow.I_CmsWorkflowManager;
+import org.opencms.xml.CmsXmlUtils;
 import org.opencms.xml.containerpage.CmsADECacheSettings;
 import org.opencms.xml.xml2json.I_CmsApiAuthorizationHandler;
 
@@ -76,13 +78,18 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+
 import org.apache.commons.digester3.Digester;
+import org.apache.commons.digester3.NodeCreateRule;
 import org.apache.commons.digester3.Rule;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 
 import org.dom4j.Element;
+import org.w3c.dom.Document;
 import org.xml.sax.Attributes;
 
 /**
@@ -213,18 +220,18 @@ public class CmsSystemConfiguration extends A_CmsXmlConfiguration {
 
     /** The "offline" attribute. */
     public static final String A_OFFLINE = "offline";
+
     /** The "online" attribute. */
     public static final String A_ONLINE = "online";
     /** The "poolname" attribute. */
     public static final String A_POOLNAME = "poolname";
-
     /** The "security" attribute. */
     public static final String A_SECURITY = "security";
+
     /** The name of the DTD for this configuration. */
     public static final String CONFIGURATION_DTD_NAME = "opencms-system.dtd";
     /** The default user session mode. */
     public static final UserSessionMode DEFAULT_USER_SESSION_MODE = UserSessionMode.standard;
-
     /** The name of the default XML file for this configuration. */
     public static final String DEFAULT_XML_FILE_NAME = "opencms-system.xml";
 
@@ -600,6 +607,9 @@ public class CmsSystemConfiguration extends A_CmsXmlConfiguration {
     /** Node name for the shell server options. */
     private static final String N_SHELL_SERVER = "shell-server";
 
+    /** Node name for two-factor auth configuration. */
+    private static final String N_TWO_FACTOR_AUTHENTICATION = "two-factor-authentication";
+
     /** Node name for the user session mode. */
     private static final String N_USER_SESSION_MODE = "user-session-mode";
 
@@ -615,6 +625,9 @@ public class CmsSystemConfiguration extends A_CmsXmlConfiguration {
     private Map<String, I_CmsApiAuthorizationHandler> m_apiAuthorizationMap = new HashMap<>();
 
     private List<ApiAuthorizationConfig> m_apiAuthorizations = new ArrayList<>();
+
+    /** Parameters for the authorization handler. */
+    private Map<String, String> m_authHandlerParams = new HashMap<>();
 
     /** The authorization handler. */
     private String m_authorizationHandler;
@@ -722,6 +735,9 @@ public class CmsSystemConfiguration extends A_CmsXmlConfiguration {
 
     private Map<String, I_CmsTextEncryption> m_textEncryptions = new LinkedHashMap<>();
 
+    /** Two-factor authentication configuration. */
+    private CmsTwoFactorAuthenticationConfig m_twoFactorConfig;
+
     private CmsUserDataRequestManager m_userDataRequestManager;
 
     /** The user session mode. */
@@ -742,6 +758,17 @@ public class CmsSystemConfiguration extends A_CmsXmlConfiguration {
     public void addAdeParameter(String name, String value) {
 
         m_adeParameters.put(name, value);
+    }
+
+    /**
+     * Adds a parameter for the authorization handler.
+     *
+     * @param name the parameter name
+     * @param value the parameter value
+     */
+    public void addAuthorizationHandlerParam(String name, String value) {
+
+        m_authHandlerParams.put(name, value);
     }
 
     /**
@@ -1018,6 +1045,25 @@ public class CmsSystemConfiguration extends A_CmsXmlConfiguration {
         digester.addCallParam("*/" + N_LOGINMANAGER + "/" + N_REQUIRE_ORGUNIT, 7);
         digester.addCallParam("*/" + N_LOGINMANAGER + "/" + N_LOGOUT_URI, 8);
 
+        try {
+            digester.addRule("*/" + N_TWO_FACTOR_AUTHENTICATION, new NodeCreateRule() {
+
+                @Override
+                public void end(String namespace, String name) throws Exception {
+
+                    org.w3c.dom.Element elem = (org.w3c.dom.Element)digester.pop();
+                    DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+                    Document doc = dbf.newDocumentBuilder().newDocument();
+                    doc.appendChild(doc.importNode(elem, true));
+                    org.dom4j.Document dom4jDoc = CmsXmlUtils.convertDocumentFromW3CToDom4j(doc);
+                    m_twoFactorConfig = new CmsTwoFactorAuthenticationConfig(dom4jDoc.getRootElement());
+                }
+
+            });
+        } catch (ParserConfigurationException e) {
+            LOG.error(e.getLocalizedMessage(), e);
+        }
+
         digester.addCallMethod(
             "*/" + N_SYSTEM + "/" + N_SAX_IMPL_SYSTEM_PROPERTIES,
             "setUseSaxImplSystemProperties",
@@ -1168,6 +1214,13 @@ public class CmsSystemConfiguration extends A_CmsXmlConfiguration {
         // add authorization handler creation rules
         digester.addCallMethod("*/" + N_SYSTEM + "/" + N_AUTHORIZATIONHANDLER, "setAuthorizationHandler", 1);
         digester.addCallParam("*/" + N_SYSTEM + "/" + N_AUTHORIZATIONHANDLER, 0, A_CLASS);
+
+        digester.addCallMethod(
+            "*/" + N_SYSTEM + "/" + N_AUTHORIZATIONHANDLER + "/parameters/param",
+            "addAuthorizationHandlerParam",
+            2);
+        digester.addCallParam("*/" + N_SYSTEM + "/" + N_AUTHORIZATIONHANDLER + "/parameters/param", 0, "name");
+        digester.addCallParam("*/" + N_SYSTEM + "/" + N_AUTHORIZATIONHANDLER + "/parameters/param", 1);
 
         String apiAuthPath = "*/system/" + N_API_AUTHORIZATIONS + "/" + N_API_AUTHORIZATION;
         digester.addRule(apiAuthPath, new Rule() {
@@ -1502,6 +1555,10 @@ public class CmsSystemConfiguration extends A_CmsXmlConfiguration {
             if (m_loginManager.getLogoutUri() != null) {
                 managerElement.addElement(N_LOGOUT_URI).addText(m_loginManager.getLogoutUri());
             }
+        }
+        if (m_twoFactorConfig != null) {
+            // the 2FA configuration is immutable, so we can just reuse the original element here
+            systemElement.add(m_twoFactorConfig.getConfigElement());
         }
 
         Element saxImpl = systemElement.addElement(N_SAX_IMPL_SYSTEM_PROPERTIES);
@@ -1878,7 +1935,7 @@ public class CmsSystemConfiguration extends A_CmsXmlConfiguration {
                         Messages.INIT_AUTHORIZATION_HANDLER_CLASS_SUCCESS_1,
                         m_authorizationHandler));
             }
-            authorizationHandler.setParameters(m_runtimeProperties);
+            authorizationHandler.setParameters(new HashMap<>(m_authHandlerParams));
             return authorizationHandler;
         } catch (Throwable t) {
             LOG.error(
@@ -2272,11 +2329,31 @@ public class CmsSystemConfiguration extends A_CmsXmlConfiguration {
         return m_tempFileProjectId;
     }
 
+    /**
+     * Gets the map of text encryptions.
+     *
+     * @return the map of text encryptions
+     */
     public Map<String, I_CmsTextEncryption> getTextEncryptions() {
 
         return Collections.unmodifiableMap(m_textEncryptions);
     }
 
+    /**
+     * Gets the two-factor authentication configuration.
+     *
+     * @return the two-factor auth configuration
+     */
+    public CmsTwoFactorAuthenticationConfig getTwoFactorAuthenticationConfig() {
+
+        return m_twoFactorConfig;
+    }
+
+    /**
+     * Gets the user data request manager.
+     *
+     * @return the user data request manager
+     */
     public CmsUserDataRequestManager getUserDataRequestManager() {
 
         return m_userDataRequestManager;
@@ -2863,6 +2940,11 @@ public class CmsSystemConfiguration extends A_CmsXmlConfiguration {
         }
     }
 
+    /**
+     * Sets the user data request manager.
+     *
+     * @param manager the user data request manager
+     */
     public void setUserDataRequestManager(CmsUserDataRequestManager manager) {
 
         m_userDataRequestManager = manager;

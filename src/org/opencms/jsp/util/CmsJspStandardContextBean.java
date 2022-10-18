@@ -41,10 +41,12 @@ import org.opencms.ade.detailpage.CmsDetailPageInfo;
 import org.opencms.ade.detailpage.CmsDetailPageResourceHandler;
 import org.opencms.file.CmsFile;
 import org.opencms.file.CmsObject;
+import org.opencms.file.CmsProperty;
 import org.opencms.file.CmsPropertyDefinition;
 import org.opencms.file.CmsRequestContext;
 import org.opencms.file.CmsResource;
 import org.opencms.file.CmsResourceFilter;
+import org.opencms.file.CmsVfsResourceNotFoundException;
 import org.opencms.file.history.CmsHistoryResourceHandler;
 import org.opencms.file.types.CmsResourceTypeXmlContainerPage;
 import org.opencms.flex.CmsFlexController;
@@ -722,6 +724,9 @@ public final class CmsJspStandardContextBean {
     /** Lazily initialized map from a category path to all sub-categories of that category. */
     private Map<String, CmsJspCategoryAccessBean> m_allSubCategories;
 
+    /** Lazily initialized nested map for reading either attributes or properties (first key: file name, second key: attribute / property name). */
+    private Map<String, Map<String, CmsJspObjectValueWrapper>> m_attributesOrProperties;
+
     /** Lazily initialized map from a category path to the path's category object. */
     private Map<String, CmsCategory> m_categories;
 
@@ -751,6 +756,9 @@ public final class CmsJspStandardContextBean {
 
     /** The lazy initialized map for the function detail pages. */
     private Map<String, String> m_functionDetailPage;
+
+    /** The lazy initialized map for the function detail pages. */
+    private Map<String, String> m_functionDetailPageExact;
 
     /** Indicates if in drag mode. */
     private boolean m_isDragMode;
@@ -793,7 +801,6 @@ public final class CmsJspStandardContextBean {
      */
     private CmsJspStandardContextBean() {
 
-        // NOOP
     }
 
     /**
@@ -803,6 +810,7 @@ public final class CmsJspStandardContextBean {
      */
     private CmsJspStandardContextBean(ServletRequest req) {
 
+        this();
         CmsFlexController controller = CmsFlexController.getController(req);
         m_request = req;
         CmsObject cms;
@@ -840,10 +848,8 @@ public final class CmsJspStandardContextBean {
             cms.addSiteRoot(cms.getRequestContext().getUri()));
         List<CmsDetailPageInfo> detailPages = config.getDetailPagesForType(type);
         CmsDetailPageInfo detailPage = null;
-        boolean usingDefault = false;
         if ((detailPages == null) || (detailPages.size() == 0)) {
             detailPage = config.getDefaultDetailPage();
-            usingDefault = true;
         } else {
             detailPage = detailPages.get(0);
         }
@@ -858,9 +864,6 @@ public final class CmsJspStandardContextBean {
             try {
                 cms.getRequestContext().setForceAbsoluteLinks(fullLink || originalForceAbsoluteLinks);
                 String link = OpenCms.getLinkManager().substituteLink(cms, r);
-                if (usingDefault) {
-                    link = CmsStringUtil.joinPaths(link, functionName);
-                }
                 return link;
             } finally {
                 cms.getRequestContext().setForceAbsoluteLinks(originalForceAbsoluteLinks);
@@ -869,6 +872,46 @@ public final class CmsJspStandardContextBean {
             LOG.warn(e.getLocalizedMessage(), e);
             return "[Error reading detail page for type =" + type + "=]";
         }
+    }
+
+    /**
+     * Gets the link to a function detail page.
+     *
+     * <p>This just returns null if no function detail page is defined, it does not use the default detail page as a fallback.
+     *
+     * @param cms the CMS context
+     * @param functionName the function name
+     *
+     * @return the link
+     */
+    public static String getFunctionDetailLinkExact(CmsObject cms, String functionName) {
+
+        String type = CmsDetailPageInfo.FUNCTION_PREFIX + functionName;
+
+        CmsADEConfigData config = OpenCms.getADEManager().lookupConfigurationWithCache(
+            cms,
+            cms.addSiteRoot(cms.getRequestContext().getUri()));
+        List<CmsDetailPageInfo> detailPages = config.getDetailPagesForType(type);
+
+        CmsDetailPageInfo detailPage = null;
+        if ((detailPages == null) || (detailPages.size() == 0)) {
+            return null;
+        }
+        detailPage = detailPages.get(0);
+        if (detailPage.isDefaultDetailPage()) {
+            return null;
+        }
+
+        CmsUUID id = detailPage.getId();
+        try {
+            CmsResource r = cms.readResource(id);
+            String link = OpenCms.getLinkManager().substituteLink(cms, r);
+            return link;
+        } catch (CmsException e) {
+            LOG.warn(e.getLocalizedMessage(), e);
+            return null;
+        }
+
     }
 
     /**
@@ -1336,6 +1379,30 @@ public final class CmsJspStandardContextBean {
     }
 
     /**
+     * Returns a lazy initialized Map that provides the detail page link as a value when given the name of a
+     * (named) dynamic function as a key.<p>
+     *
+     * The provided Map key is assumed to be a String that represents a named dynamic function.<p>
+     *
+     * Usage example on a JSP with the JSTL:<pre>
+     * &lt;a href=${cms.functionDetailPage['search']} /&gt
+     * </pre>
+     *
+     * @return a lazy initialized Map that provides the detail page link as a value when given the name of a
+     * (named) dynamic function as a key
+     *
+     * @see #getTypeDetailPage()
+     */
+    public Map<String, String> getFunctionDetailPageExact() {
+
+        if (m_functionDetailPageExact == null) {
+            m_functionDetailPageExact = CmsCollectionsGenericWrapper.createLazyMap(
+                name -> getFunctionDetailLinkExact(m_cms, (String)name));
+        }
+        return m_functionDetailPageExact;
+    }
+
+    /**
      * Returns a lazy map which creates a wrapper object for a dynamic function format when given an XML content
      * as a key.<p>
      *
@@ -1710,6 +1777,41 @@ public final class CmsJspStandardContextBean {
             });
         }
         return m_allSubCategories;
+    }
+
+    /**
+     * Lazily reads the given attribute from the current sitemap or a property of the same name from the given resource.
+     *
+     * <p>Usage example: ${cms.readAttributeOrProperty['/index.html']['attr']}
+     *
+     * @return a lazy loading map for accessing attributes / properties
+     */
+    public Map<String, Map<String, CmsJspObjectValueWrapper>> getReadAttributeOrProperty() {
+
+        if (m_attributesOrProperties == null) {
+            m_attributesOrProperties = CmsCollectionsGenericWrapper.createLazyMap(pathObj -> {
+                return CmsCollectionsGenericWrapper.createLazyMap(keyObj -> {
+
+                    String path = (String)pathObj;
+                    String key = (String)keyObj;
+
+                    CmsObject cms = getCmsObject();
+                    String result = m_config.getAttribute(key, null);
+                    if (result == null) {
+                        try {
+                            CmsProperty prop = cms.readPropertyObject(path, key, /*search=*/true);
+                            result = prop.getValue();
+                        } catch (CmsVfsResourceNotFoundException e) {
+                            LOG.info(e.getLocalizedMessage(), e);
+                        } catch (Exception e) {
+                            LOG.error(e.getLocalizedMessage(), e);
+                        }
+                    }
+                    return CmsJspObjectValueWrapper.createWrapper(cms, result);
+                });
+            });
+        }
+        return m_attributesOrProperties;
     }
 
     /**

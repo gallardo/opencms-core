@@ -39,6 +39,7 @@ import org.opencms.site.CmsSSLMode;
 import org.opencms.site.CmsSite;
 import org.opencms.site.CmsSiteManagerImpl;
 import org.opencms.site.CmsSiteMatcher;
+import org.opencms.site.CmsSiteMatcher.RedirectMode;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -377,7 +378,26 @@ public class CmsSitesConfiguration extends A_CmsXmlConfiguration implements I_Cm
                 CmsSiteMatcher matcher = aliasIterator.next();
                 Element aliasElement = siteElement.addElement(N_ALIAS);
                 aliasElement.addAttribute(A_SERVER, matcher.getUrl());
-                aliasElement.addAttribute(A_REDIRECT, String.valueOf(matcher.isRedirect()));
+
+                RedirectMode redirectMode = matcher.getRedirectMode();
+
+                String redirectModeStr = null;
+                switch (redirectMode) {
+
+                    case permanent:
+                        redirectModeStr = "permanent";
+                        break;
+                    case temporary:
+
+                        redirectModeStr = "true";
+                        break;
+                    case none:
+                    default:
+                        redirectModeStr = "false";
+                        break;
+                }
+                aliasElement.addAttribute(A_REDIRECT, redirectModeStr);
+
                 if (matcher.getTimeOffset() != 0) {
                     aliasElement.addAttribute(A_OFFSET, "" + (matcher.getTimeOffset() / 1000));
                 }
@@ -388,6 +408,7 @@ public class CmsSitesConfiguration extends A_CmsXmlConfiguration implements I_Cm
             }
         }
         return sitesElement;
+
     }
 
     /**

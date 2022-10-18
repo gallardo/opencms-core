@@ -628,6 +628,13 @@ public interface I_CmsLayoutBundle extends ClientBundle {
          * @return the CSS class name
          */
         String dragStarted();
+
+        /**
+         * Access method.<p>
+         *
+         * @return the CSS class name
+         */
+        String fullWindowDrag();
     }
 
     /** The error dialog CSS classes. */
@@ -1299,6 +1306,13 @@ public interface I_CmsLayoutBundle extends ClientBundle {
 
     /** ListTree CSS. */
     interface I_CmsListTreeCss extends CssResource {
+
+        /**
+         * Access method.<p>
+         *
+         * @return the CSS class name
+         */
+        String bigIndentation();
 
         /**
          * Access method.<p>

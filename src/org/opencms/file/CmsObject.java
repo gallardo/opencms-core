@@ -62,6 +62,7 @@ import org.opencms.security.CmsRoleViolationException;
 import org.opencms.security.CmsSecurityException;
 import org.opencms.security.I_CmsPermissionHandler;
 import org.opencms.security.I_CmsPrincipal;
+import org.opencms.security.twofactor.CmsSecondFactorInfo;
 import org.opencms.util.CmsPair;
 import org.opencms.util.CmsStringUtil;
 import org.opencms.util.CmsUUID;
@@ -461,6 +462,22 @@ public final class CmsObject {
             oldValue,
             newValue,
             recursive);
+    }
+
+    /**
+     * Checks if a login for the given user name and password would work without taking two-factor authentication into account.
+     *
+     * If this succeeds, it does not actually log the CmsObject in. But if it fails, it throws an exception and increments
+     * the failed login counter for the given user.
+     *
+     * @param userName the user name to check
+     * @param password the password to check
+     * @throws CmsException if the login check fails
+     */
+    public void checkLoginUser(String userName, String password) throws CmsException {
+
+        m_securityManager.checkLogin(m_context, userName, password, m_context.getRemoteAddress());
+
     }
 
     /**
@@ -2028,7 +2045,40 @@ public final class CmsObject {
     throws CmsException {
 
         return getResourceType(
-            resource).importResource(this, m_securityManager, resourcename, resource, content, properties);
+            resource).importResource(this, m_securityManager, null, resourcename, resource, content, properties);
+    }
+
+    /**
+     * Imports a resource to the OpenCms VFS.<p>
+     *
+     * If a resource already exists in the VFS (i.e. has the same name and
+     * same id) it is replaced by the imported resource.<p>
+     *
+     * If a resource with the same name but a different id exists,
+     * the imported resource is (usually) moved to the "lost and found" folder.<p>
+     *
+     * @param resourcename the name for the resource after import (full current site relative path)
+     * @param report optional report to write non-critical errors to (may be null)
+     * @param resource the resource object to be imported
+     * @param content the content of the resource
+     * @param properties the properties of the resource
+     *
+     * @return the imported resource
+     *
+     * @throws CmsException if something goes wrong
+     *
+     * @see CmsObject#moveToLostAndFound(String)
+     */
+    public CmsResource importResource(
+        String resourcename,
+        I_CmsReport report,
+        CmsResource resource,
+        byte[] content,
+        List<CmsProperty> properties)
+    throws CmsException {
+
+        return getResourceType(
+            resource).importResource(this, m_securityManager, report, resourcename, resource, content, properties);
     }
 
     /**
@@ -2201,7 +2251,51 @@ public final class CmsObject {
      */
     public String loginUser(String username, String password) throws CmsException {
 
-        return loginUser(username, password, m_context.getRemoteAddress());
+        return loginUser(username, password, null, m_context.getRemoteAddress());
+    }
+
+    /**
+     * Logs in the user.
+     *
+     * @param username the user name
+     * @param password the password
+     * @param code the second factor information for 2FA
+     * @return the logged in user
+     *
+     * @throws CmsException if something goes wrong
+     */
+    public String loginUser(String username, String password, CmsSecondFactorInfo code) throws CmsException {
+
+        return loginUser(username, password, code, m_context.getRemoteAddress());
+    }
+
+    /**
+     * Logs a user with a given ip address into the Cms, if the password is correct.<p>
+     *
+     * @param username the name of the user
+     * @param password the password of the user
+     * @param code the second factor information for 2FA
+     * @param remoteAddress the ip address
+     *
+     * @return the name of the logged in user
+     *
+     * @throws CmsException if the login was not successful
+     */
+    public String loginUser(String username, String password, CmsSecondFactorInfo code, String remoteAddress)
+    throws CmsException {
+
+        // login the user
+        CmsUser newUser = m_securityManager.loginUser(m_context, username, password, code, remoteAddress);
+        // set the project back to the "Online" project
+        CmsProject newProject = m_securityManager.readProject(CmsProject.ONLINE_PROJECT_ID);
+        // switch the cms context to the new user and project
+        m_context.switchUser(newUser, newProject, newUser.getOuFqn());
+        // init this CmsObject with the new user
+        init(m_securityManager, m_context);
+        // fire a login event
+        fireEvent(I_CmsEventListener.EVENT_LOGIN_USER, newUser);
+        // return the users login name
+        return newUser.getName();
     }
 
     /**
@@ -2217,18 +2311,7 @@ public final class CmsObject {
      */
     public String loginUser(String username, String password, String remoteAddress) throws CmsException {
 
-        // login the user
-        CmsUser newUser = m_securityManager.loginUser(m_context, username, password, remoteAddress);
-        // set the project back to the "Online" project
-        CmsProject newProject = m_securityManager.readProject(CmsProject.ONLINE_PROJECT_ID);
-        // switch the cms context to the new user and project
-        m_context.switchUser(newUser, newProject, newUser.getOuFqn());
-        // init this CmsObject with the new user
-        init(m_securityManager, m_context);
-        // fire a login event
-        fireEvent(I_CmsEventListener.EVENT_LOGIN_USER, newUser);
-        // return the users login name
-        return newUser.getName();
+        return loginUser(username, password, (CmsSecondFactorInfo)null, remoteAddress);
     }
 
     /**
@@ -3879,13 +3962,29 @@ public final class CmsObject {
      *
      * @param username the name of the user
      * @param oldPassword the old password
+     * @param secondFactor the second factor information for 2FA
+     * @param newPassword the new password
+     *
+     * @throws CmsException if the user data could not be read from the database
+     */
+    public void setPassword(String username, String oldPassword, CmsSecondFactorInfo secondFactor, String newPassword)
+    throws CmsException {
+
+        m_securityManager.resetPassword(m_context, username, oldPassword, secondFactor, newPassword);
+    }
+
+    /**
+     * Sets the password for a specified user.<p>
+     *
+     * @param username the name of the user
+     * @param oldPassword the old password
      * @param newPassword the new password
      *
      * @throws CmsException if the user data could not be read from the database
      */
     public void setPassword(String username, String oldPassword, String newPassword) throws CmsException {
 
-        m_securityManager.resetPassword(m_context, username, oldPassword, newPassword);
+        m_securityManager.resetPassword(m_context, username, oldPassword, null, newPassword);
     }
 
     /**

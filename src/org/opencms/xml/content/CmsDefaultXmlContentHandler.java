@@ -557,6 +557,9 @@ public class CmsDefaultXmlContentHandler implements I_CmsXmlContentHandler, I_Cm
     /** Constant for the "parameters" appinfo element name. */
     public static final String APPINFO_PARAMETERS = "parameters";
 
+    /** version-transformation node name. */
+    public static final String APPINFO_VERSION_TRANSFORMATION = "versiontransformation";
+
     /** Constant for the "preview" appinfo element name. */
     public static final String APPINFO_PREVIEW = "preview";
 
@@ -825,6 +828,9 @@ public class CmsDefaultXmlContentHandler implements I_CmsXmlContentHandler, I_Cm
 
     /** The configured settings for the formatters (as defined in the annotations). */
     protected Map<String, CmsXmlContentProperty> m_settings;
+
+    /** Path to XSL transform in VFS to use for version transformation. */
+    protected String m_versionTransformation;
 
     /** The configured locale synchronization elements. */
     protected List<String> m_synchronizations;
@@ -1736,6 +1742,14 @@ public class CmsDefaultXmlContentHandler implements I_CmsXmlContentHandler, I_Cm
     }
 
     /**
+     * @see org.opencms.xml.content.I_CmsXmlContentHandler#getVersionTransformation()
+     */
+    public String getVersionTransformation() {
+
+        return m_versionTransformation;
+    }
+
+    /**
      * @see org.opencms.xml.content.I_CmsXmlContentHandler#getWidget(org.opencms.file.CmsObject, java.lang.String)
      */
     public I_CmsWidget getWidget(CmsObject cms, String path) {
@@ -1901,8 +1915,9 @@ public class CmsDefaultXmlContentHandler implements I_CmsXmlContentHandler, I_Cm
                     m_reverseMappingEnabled = Boolean.parseBoolean(element.getTextTrim());
                 } else if (nodeName.equals(APPINFO_GEOMAPPING)) {
                     initGeoMappingEntries(element);
+                } else if (nodeName.equals(APPINFO_VERSION_TRANSFORMATION)) {
+                    m_versionTransformation = element.getTextTrim();
                 }
-
             }
         }
         m_contentDefinition = contentDefinition;

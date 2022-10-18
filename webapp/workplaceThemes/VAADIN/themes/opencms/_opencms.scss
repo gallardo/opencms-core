@@ -686,7 +686,10 @@
 	*[location="buttonContainer"] > * > * > .o-resinfo2 {
 		margin-top: -1px;
 	}
-
+	
+	.o-broken-links .o-deleted .o-resinfo2 .o-resinfo-top > * {
+		text-decoration: line-through;
+	}
 
 	.o-resinfo2 {
 		 border: 1px solid #ccc;
@@ -978,6 +981,10 @@
 	.cmslogin-form {
 		height: 100%;
 	}
+	
+	.o-login-qr-code {
+        border: 1px solid #d9d9d9; 
+    }
 
 	.o-login-form .o-login-logo{
 		text-align: center;
@@ -1486,6 +1493,34 @@
 		width: 170px;
 		height: 42px;
 	}
+	
+	.o-resinfo-button-container {
+		display: flex; 
+		align-items: center; 
+	}
+	
+	.o-gwt-contextmenu-button {
+		& > *[role="button"] {
+			vertical-align: middle;
+		}
+	}
+	
+	.o-gwt-contextmenu-button-margin {
+		margin-right: 5px;
+	}
+	
+	.o-resinfo2 .o-gwt-contextmenu-button {
+		visibility: hidden;
+	}
+	
+	.o-resinfo2:hover .o-gwt-contextmenu-button {
+		visibility: visible;
+	}
+
+    .o-label-wrap { 
+        white-space: normal !important;
+    }
+	
 }
 
 .waggle{

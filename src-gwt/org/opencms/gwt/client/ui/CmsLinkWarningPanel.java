@@ -30,7 +30,6 @@ package org.opencms.gwt.client.ui;
 import org.opencms.gwt.client.Messages;
 import org.opencms.gwt.client.ui.contextmenu.CmsContextMenuButton;
 import org.opencms.gwt.client.ui.contextmenu.CmsContextMenuHandler;
-import org.opencms.gwt.client.ui.css.I_CmsConstantsBundle;
 import org.opencms.gwt.client.ui.css.I_CmsLayoutBundle;
 import org.opencms.gwt.client.ui.tree.CmsTreeItem;
 import org.opencms.gwt.shared.CmsBrokenLinkBean;
@@ -110,10 +109,11 @@ public class CmsLinkWarningPanel extends Composite {
      * Helper method for creating a list item widget based on a bean.<p>
      *
      * @param brokenLinkBean the bean with the data for the list item widget
+     * @param contextMenu true if a context menu should be added
      *
      * @return the new list item widget
      */
-    protected CmsListItemWidget createListItemWidget(CmsBrokenLinkBean brokenLinkBean) {
+    protected CmsListItemWidget createListItemWidget(CmsBrokenLinkBean brokenLinkBean, boolean contextMenu) {
 
         CmsListInfoBean info = new CmsListInfoBean();
         String title = brokenLinkBean.getTitle();
@@ -122,6 +122,7 @@ public class CmsLinkWarningPanel extends Composite {
         }
         info.setTitle(title);
         info.setSubTitle(brokenLinkBean.getSubTitle());
+        info.setBigIconClasses(brokenLinkBean.getIcon());
         String type = brokenLinkBean.getType();
         if (type != null) {
             info.setResourceType(type);
@@ -140,7 +141,7 @@ public class CmsLinkWarningPanel extends Composite {
             }
         });
         CmsUUID structureId = brokenLinkBean.getStructureId();
-        if ((structureId != null) && !structureId.isNullUUID()) {
+        if (contextMenu && (structureId != null) && !structureId.isNullUUID()) {
 
             CmsContextMenuButton button = new CmsContextMenuButton(structureId, m_menuHandler, AdeContext.resourceinfo);
 
@@ -158,13 +159,11 @@ public class CmsLinkWarningPanel extends Composite {
      */
     protected CmsTreeItem createTreeItem(CmsBrokenLinkBean brokenLinkBean) {
 
-        CmsListItemWidget itemWidget = createListItemWidget(brokenLinkBean);
+        CmsListItemWidget itemWidget = createListItemWidget(brokenLinkBean, /*contextmenu=*/true);
         CmsTreeItem item = new CmsTreeItem(false, itemWidget);
+        item.getChildren().addStyleName(I_CmsLayoutBundle.INSTANCE.listTreeCss().bigIndentation());
         for (CmsBrokenLinkBean child : brokenLinkBean.getChildren()) {
-            CmsListItemWidget childItemWidget = createListItemWidget(child);
-            Widget warningImage = FontOpenCms.WARNING.getWidget(20, I_CmsConstantsBundle.INSTANCE.css().colorWarning());
-            warningImage.addStyleName(I_CmsLayoutBundle.INSTANCE.listItemWidgetCss().permaVisible());
-            childItemWidget.addButton(warningImage);
+            CmsListItemWidget childItemWidget = createListItemWidget(child, /*contextmenu=*/false);
             childItemWidget.addTitleStyleName(I_CmsLayoutBundle.INSTANCE.linkWarningCss().deletedEntryLabel());
             CmsTreeItem childItem = new CmsTreeItem(false, childItemWidget);
             item.addChild(childItem);
