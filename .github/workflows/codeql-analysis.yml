@@ -13,12 +13,14 @@ name: "CodeQL"
 
 on:
   push:
-    branches: [ master ]
+    # No branch specified. it's run on every branch
   pull_request:
     # The branches below must be a subset of the branches above
     branches: [ master ]
   schedule:
     - cron: '39 0 * * 4'
+  on:
+    workflow_dispatch:
 
 jobs:
   analyze:
