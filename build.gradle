@@ -9,10 +9,9 @@ buildscript {
 }
 
 plugins {
-    id 'java-library'
+    id 'opencms.java-conventions'
     id 'maven-publish'
     id 'signing'
-    id 'eclipse'
     id 'io.github.gradle-nexus.publish-plugin' version '2.0.0'
     id 'com.liferay.tlddoc.builder' version '2.0.1'
 }
@@ -21,10 +20,7 @@ group = "org.opencms"
 
 layout.buildDirectory.set(file(build_directory))
 
-java {
-    sourceCompatibility = JavaVersion.toVersion(java_target_version)
-    targetCompatibility = JavaVersion.toVersion(java_target_version)
-}
+
 signing {
     useGpgCmd()
 }
@@ -76,21 +72,7 @@ if (hasExtModules) {
     }
 }
 
-repositories {
-    mavenLocal()
-    if (project.hasProperty('additional_repositories')){
-        additional_repositories.split(';').each{ repo ->
-            maven { url repo }
-        }
-    }
-    mavenCentral()
-    maven {
-        url 'https://maven.restlet.talend.com'
-    }
-    maven {
-        url 'https://maven.vaadin.com/vaadin-addons'
-    }
-}
+// Repositories applied via opencms.java-conventions
 
 if (!project.hasProperty('max_heap_size')){
     project.ext.max_heap_size='1024m'
@@ -100,147 +82,9 @@ project.ext.allModuleNames = modules_list.split(',')
 project.ext.modulesDistsDir = layout.buildDirectory.dir("modulesZip").get().asFile
 
 
-sourceSets{
-    main {
-        java.srcDirs=['src']
-        resources.srcDirs=['src']
-    }
-    modules {
-        java.srcDirs=['src-modules']
-        resources.srcDirs=['src-modules']
-    }
-    gwt {
-        java {
-            srcDirs=['src-gwt']
-            exclude '**/super_src/**'
-        }
-        resources {
-            srcDirs=['src-gwt']
-            exclude '**/super_src/**'
-        }
-    }
-    setup {
-        java.srcDirs=['src-setup']
-        resources.srcDirs=['src-setup']
-    }
-    test {
-        java {
-            srcDirs=['test']
-            exclude 'data/**'
-        }
-        resources {
-            srcDirs=['test']
-            exclude 'data/**'
-        }
-    }
-    testGwt {
-        java {
-            srcDirs=['test-gwt']
-            exclude '**/super_src/**'
-        }
-        resources {
-            srcDirs=['test-gwt']
-            exclude '**/super_src/**'
-        }
-    }
-}
+// SourceSets applied via opencms.java-conventions
 
-configurations {
-
-    distribution {
-        description = 'libraries included into the opencms distribution'
-    }
-
-    api {
-        extendsFrom distribution
-    }
-    
-    usedApis {
-    	description = "APIs that should normally be provided by the servlet container, but are also needed for the CmsShell, so they're bundled in the WAR." 
-    }
-
-    compile {
-        description = 'used to compile the opencms.jar and the modules jars'
-        extendsFrom distribution
-        extendsFrom usedApis
-    }
-    // Default configuration of the java-library plugin
-    // It corresponds to our compile configuration, that's why we have to use extendsFrom here
-    implementation {
-        extendsFrom compile
-    }
-
-    modulesCompile {
-        description = 'used to compile the modules classes'
-        extendsFrom compile
-    }
-
-    // Default configuration of the java-library plugin
-    // It corresponds to our compile configuration, that's why we have to use extendsFrom here
-    modulesImplementation {
-        extendsFrom modulesCompile
-    }
-
-    moduleDeps {
-        description = 'additional dependencies required by external modules'
-    }
-
-    testCompile{
-        extendsFrom modulesCompile
-    }
-
-    // Default configuration of the java-library plugin
-    // It corresponds to our compile configuration, that's why we have to use extendsFrom here
-    testImplementation {
-        extendsFrom testCompile
-        extendsFrom setupImplementation
-    }
-
-    gwtCompile {
-        description = 'needed to generate the GWT JavaScript resources'
-        extendsFrom modulesCompile
-    }
-
-    // Default configuration of the java-library plugin
-    // It corresponds to our compile configuration, that's why we have to use extendsFrom here
-    gwtImplementation {
-        extendsFrom gwtCompile
-    }
-
-    testGwtCompile{
-        description = 'needed to run GWT test cases'
-        extendsFrom gwtCompile
-    }
-
-    // Default configuration of the java-library plugin
-    // It corresponds to our compile configuration, that's why we have to use extendsFrom here
-    testGwtImplementation {
-        extendsFrom testGwtCompile
-    }
-
-    // Fix the jetty incompatibility for the version from distribution used by Solr and the one for the GWT test cases.
-    testGwtRuntimeClasspath{
-        resolutionStrategy {
-            force 'org.eclipse.jetty:jetty-client:9.4.50.v20221201'
-            force 'org.eclipse.jetty:jetty-http:9.4.50.v20221201'
-            force 'org.eclipse.jetty:jetty-io:9.4.50.v20221201'
-            force 'org.eclipse.jetty:jetty-util:9.4.50.v20221201'
-            force 'org.eclipse.jetty.http2:http2-common:9.4.50.v20221201'
-            force 'org.eclipse.jetty.http2:http2-client:9.4.50.v20221201'
-            force 'org.eclipse.jetty.http2:http2-http-client-transport:9.4.50.v20221201'
-        }
-    }
-
-    setupCompile {
-        extendsFrom modulesCompile
-    }
-
-    // Default configuration of the java-library plugin
-    // It corresponds to our compile configuration, that's why we have to use extendsFrom here
-    setupImplementation {
-        extendsFrom setupCompile
-    }
-}
+// Configurations applied via opencms.java-conventions
 
 // import dependencies
 apply from: 'dependencies.gradle'
@@ -251,37 +95,13 @@ if (project.hasProperty('external_directories')){
     }
 }
 
-eclipse.classpath.file {
-    whenMerged { classpath ->
-        classpath.entries.each {entry ->
-            if ((entry.kind == 'src') && (entry.path.contains('gwt'))){
-                entry.entryAttributes['test'] = 'true'
-            }
-            if (entry.kind == 'src' && entry.path == 'src') {
-                entry.output='bin/main'
-                entry.entryAttributes['test'] = 'false'
-            }
-        }
-    }
-}
-
-eclipse.classpath.plusConfigurations = configurations.findAll { it.name.endsWith('Compile') }
-
-eclipse.classpath.downloadSources=true
+// Eclipse classpath config applied via opencms.java-conventions
 
 wrapper {
     gradleVersion = '7.5.1'
 }
 
-tasks.register('copyDeps', Copy) {
-    from configurations.distribution
-    into layout.buildDirectory.dir("deps")
-}
-
-tasks.register('copyCompileDeps', Copy) {
-    from configurations.compile
-    into layout.buildDirectory.dir("deps")
-}
+// copyDeps tasks applied via opencms.java-conventions
 
 // Task from the java plugin
 jar {
@@ -691,52 +511,7 @@ gwtModuleNames.split(',').each{ gwtModule ->
 
 
 
-tasks.register('setupJar', Jar) {
-    dependsOn jar
-    from sourceSets.setup.output
-    archiveFileName = 'opencms-setup.jar'
-    archiveBaseName = 'opencms-setup'
-    group 'OpenCms core JARs'
-    exclude '**/.gitignore'
-}
-
-tasks.register('javadocSetup', Javadoc) {
-    dependsOn jar
-    source = sourceSets.setup.allJava
-    classpath = project.sourceSets.setup.compileClasspath
-    destinationDir = layout.buildDirectory.dir("docs/javadocSetup").get().asFile
-    doLast {
-        copy {
-            from  "${projectDir}/doc/javadoc/logos"
-            into layout.buildDirectory.dir("docs/javadocSetup/logos")
-        }
-    }
-
-    project.configure(options) {
-        memberLevel = org.gradle.external.javadoc.JavadocMemberLevel.PROTECTED
-        charSet = "UTF-8"
-        author="true"
-        version="true"
-        source= java_target_version
-        linkSource="false"
-        docTitle="OpenCms Setup API, version $ocmsVersion"
-        windowTitle="OpenCms Setup API, version $ocmsVersion"
-        header = "<script type=\"text/javascript\"> if (window.location.href.indexOf(\"overview-frame\") == -1) { document.write(\"<a id=\\\"brandingLink\\\" target=\\\"_blank\\\" href=\\\"http://www.alkacon.com\\\"><img border=\\\"0\\\" id=\\\"brandingPic\\\" src=\\\"{@docRoot}/logos/Alkacon.svg\\\" /></a>\"); } else { document.write(\"<a id=\\\"brandingLink\\\" target=\\\"_blank\\\" href=\\\"http://www.opencms.com\\\"><img border=\\\"0\\\" id=\\\"brandingPic\\\" src=\\\"{@docRoot}/logos/OpenCms.svg\\\" /></a>\"); }</script>"
-    }
-}
-
-tasks.register('javadocJarSetup', Jar) {
-    dependsOn javadocSetup
-    archiveClassifier = 'javadoc'
-    from layout.buildDirectory.dir("docs/javadocSetup")
-    archiveBaseName = 'opencms-setup'
-}
-
-tasks.register('sourcesJarSetup', Jar) {
-    from sourceSets.setup.java.srcDirs
-    archiveClassifier = 'sources'
-    archiveBaseName = 'opencms-setup'
-}
+// Setup tasks applied via opencms.java-conventions
 
 tlddoc {
     source 'webapp/WEB-INF/opencms.tld'
