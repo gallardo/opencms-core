@@ -10,6 +10,7 @@ buildscript {
 
 plugins {
     id 'opencms.java-conventions'
+    id 'opencms.testing-conventions'
     id 'maven-publish'
     id 'signing'
     id 'io.github.gradle-nexus.publish-plugin' version '2.0.0'
@@ -908,93 +909,14 @@ tasks.register('bindist', Zip) {
 }
 
 
-// Shared configuration for all test tasks
-tasks.withType(Test).configureEach {
-    maxHeapSize = "2000m"
-    useJUnit()
-    scanForTestClasses = false
-    testLogging.showStandardStreams = true
-    ignoreFailures = true
-}
+// Testing logic moved to opencms.testing-conventions.gradle.kts
 
-def coreTestConfig = {
-    testClassesDirs = files(sourceSets.test.java.classesDirectory)
-    systemProperties['test.data.path'] = "${projectDir}/test/data"
-    systemProperties['test.webapp.path'] = "${projectDir}/webapp"
-    systemProperties['test.project.path'] = "${projectDir}"
-    systemProperties['test.build.folder'] = sourceSets.test.output.resourcesDir
-    inputs.dir "${projectDir}/test/data"
-    inputs.dir "${projectDir}/webapp"
-}
 
-test {
-    configure coreTestConfig
-    description "Runs the complete test suite 'org.opencms.test.AllTests'."
 
-    filter.includeTestsMatching("org.opencms.test.AllTests")
-}
 
-tasks.register('testSingle', Test) {
-    description "Runs a specified test case. Equivalent to standard 'test' task. \n" +
-                "NOTE: Usage of legacy '-PtestCaseToRun' property is DEPRECATED. Use standard '--tests' filtering instead. \n" +
-                "Conflict Resolution: If both '-PtestCaseToRun' and '--tests' are defined, standard '--tests' takes precedence. \n" +
-                "Default: Runs TestCmsSystemInfo test case if no filters are provided."
-    group 'verification'
-    configure coreTestConfig
 
-    doFirst{
-        logger.info("Test filter configuration - commandLineIncludePatterns: ${filter.commandLineIncludePatterns}, includePatterns: ${filter.includePatterns}")
 
-        boolean hasExplicit = !filter.commandLineIncludePatterns.empty || !filter.includePatterns.empty
 
-        // Backward compatibility: Check for -PtestCaseToRun property
-        if (project.hasProperty('testCaseToRun')) {
-             if (hasExplicit) {
-                 logger.warn("WARNING: Both -PtestCaseToRun and --tests filters are present. Using standard Gradle filters and ignoring legacy property.")
-             } else {
-                 def legacyTestInfo = project.property('testCaseToRun')
-                 logger.warn("DEPRECATION WARNING: The 'testCaseToRun' property is deprecated. Please use standard Gradle filtering: ./gradlew testSingle --tests ${legacyTestInfo}")
-                 filter.includeTestsMatching "${legacyTestInfo}*"
-                 hasExplicit = true
-             }
-        }
-
-        logger.debug("hasExplicitTestSelection: ${hasExplicit}")
-
-        if (!hasExplicit) {
-            logger.lifecycle("No specific tests requested, applying default filter: org.opencms.main.TestCmsSystemInfo*")
-            filter.includeTestsMatching "org.opencms.main.TestCmsSystemInfo*"
-        }
-    }
-}
-
-tasks.register('testJar', Jar) {
-    dependsOn compileTestJava
-    from sourceSets.test.output
-    archiveBaseName = 'opencms-test'
-    exclude '**/.gitignore'
-    exclude '**/*.java'
-}
-
-tasks.register('javadocTest', Javadoc) {
-    dependsOn jar
-    source = sourceSets.test.allJava
-    classpath = project.sourceSets.test.compileClasspath
-    destinationDir = layout.buildDirectory.dir("docs/javadocTest").get().asFile
-}
-
-tasks.register('javadocJarTest', Jar) {
-    dependsOn javadocTest
-    archiveClassifier = 'javadoc'
-    from layout.buildDirectory.dir("docs/javadocTest")
-    archiveBaseName = 'opencms-test'
-}
-
-tasks.register('sourcesJarTest', Jar) {
-    from sourceSets.test.java.srcDirs
-    archiveClassifier = 'sources'
-    archiveBaseName = 'opencms-test'
-}
 
 
 tasks.register('testGwt', Test) {
