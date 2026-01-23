@@ -187,13 +187,6 @@ tasks.register('sourcesJar', Jar) {
     archiveBaseName = 'opencms-core'
 }
 
-// gwtJar moved to opencms.gwt-conventions.gradle.kts
-
-// modulesJar moved to opencms.module-packaging.gradle.kts
-
-// Module javadoc and sources moved to opencms.module-packaging.gradle.kts
-
-// GWT javadoc and sources moved to opencms.gwt-conventions.gradle.kts
 
 tasks.register('resourcesJar', Jar) {
     doFirst {
@@ -230,7 +223,6 @@ tasks.register('resourcesJar', Jar) {
     }
 }
 
-// GWT module task generation loop moved to opencms.gwt-conventions.gradle.kts
 
 
 
@@ -250,12 +242,6 @@ tasks.register('tlddocZip', Zip) {
     destinationDirectory = file("${project.docsDir}")
 }
 
-// preserveLibModules and localeModules initialized via opencms.module-packaging
-// dist_ and jar_ tasks for modules moved to opencms.module-packaging.gradle.kts
-// allModules task moved to opencms.module-packaging.gradle.kts
-
-// war and updater tasks moved to opencms.distribution-conventions.gradle.kts
-// bindist task moved to opencms.distribution-conventions.gradle.kts
 
 
 // Testing logic moved to opencms.testing-conventions.gradle.kts
