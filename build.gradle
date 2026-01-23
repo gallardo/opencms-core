@@ -13,6 +13,7 @@ plugins {
     id 'opencms.testing-conventions'
     id 'opencms.gwt-conventions'
     id 'opencms.ui-conventions'
+    id 'opencms.module-packaging'
     id 'maven-publish'
     id 'signing'
     id 'io.github.gradle-nexus.publish-plugin' version '2.0.0'
@@ -81,8 +82,7 @@ if (!project.hasProperty('max_heap_size')){
     project.ext.max_heap_size='1024m'
 }
 
-project.ext.allModuleNames = modules_list.split(',')
-project.ext.modulesDistsDir = layout.buildDirectory.dir("modulesZip").get().asFile
+// allModuleNames and modulesDistsDir initialized via opencms.module-packaging
 
 
 // SourceSets applied via opencms.java-conventions
@@ -189,51 +189,9 @@ tasks.register('sourcesJar', Jar) {
 
 // gwtJar moved to opencms.gwt-conventions.gradle.kts
 
-tasks.register('modulesJar', Jar) {
-    from sourceSets.modules.output
-    archiveFileName = 'opencms-modules.jar'
-    archiveBaseName = 'opencms-modules'
-    group 'OpenCms core JARs'
-    exclude '**/.gitignore'
-}
+// modulesJar moved to opencms.module-packaging.gradle.kts
 
-tasks.register('javadocModules', Javadoc) {
-    dependsOn jar
-    doLast {
-        copy {
-            from  "${projectDir}/doc/javadoc/logos"
-            into layout.buildDirectory.dir("docs/javadocModules/logos")
-        }
-    }
-
-    project.configure(options) {
-        memberLevel = org.gradle.external.javadoc.JavadocMemberLevel.PROTECTED
-        charSet = "UTF-8"
-        author="true"
-        version="true"
-        source= java_target_version
-        linkSource="false"
-        docTitle="OpenCms Workplace Modules API, version $ocmsVersion"
-        windowTitle="OpenCms Workplace Modules API, version $ocmsVersion"
-        header = "<script type=\"text/javascript\"> if (window.location.href.indexOf(\"overview-frame\") == -1) { document.write(\"<a id=\\\"brandingLink\\\" target=\\\"_blank\\\" href=\\\"http://www.alkacon.com\\\"><img border=\\\"0\\\" id=\\\"brandingPic\\\" src=\\\"{@docRoot}/logos/Alkacon.svg\\\" /></a>\"); } else { document.write(\"<a id=\\\"brandingLink\\\" target=\\\"_blank\\\" href=\\\"http://www.opencms.com\\\"><img border=\\\"0\\\" id=\\\"brandingPic\\\" src=\\\"{@docRoot}/logos/OpenCms.svg\\\" /></a>\"); }</script>"
-    }
-    source = sourceSets.modules.allJava
-    classpath = project.sourceSets.modules.compileClasspath
-    destinationDir = layout.buildDirectory.dir("docs/javadocModules").get().asFile
-}
-
-tasks.register('javadocJarModules', Jar) {
-    dependsOn javadocModules
-    archiveClassifier = 'javadoc'
-    from layout.buildDirectory.dir("docs/javadocModules")
-    archiveBaseName = 'opencms-modules'
-}
-
-tasks.register('sourcesJarModules', Jar) {
-    from sourceSets.modules.java.srcDirs
-    archiveClassifier = 'sources'
-    archiveBaseName = 'opencms-modules'
-}
+// Module javadoc and sources moved to opencms.module-packaging.gradle.kts
 
 // GWT javadoc and sources moved to opencms.gwt-conventions.gradle.kts
 
@@ -292,119 +250,9 @@ tasks.register('tlddocZip', Zip) {
     destinationDirectory = file("${project.docsDir}")
 }
 
-def preserveLibModules = ''
-def localeModules = []
-
-// iterate all available modules and create the required tasks
-allModuleNames.each{ moduleName ->
-    def modulePackages = moduleName
-    def moduleFolder = file("${projectDir}/modules/${moduleName}")
-    def propertyFile = file("${moduleFolder}/module.properties")
-    def gwtRename = null
-    def workplacelocalization=null;
-    if (propertyFile.exists()){
-        Properties moduleProperties= new Properties()
-        moduleProperties.load(new FileInputStream(propertyFile))
-        if (moduleProperties['workplacelocalization']!=null){
-            workplacelocalization=moduleProperties['workplacelocalization']
-        }
-    }
-    def manifestFile = file("${moduleFolder}/resources/manifest.xml")
-    def moduleDependencies=[]
-    def moduleVersion = version
-    if (manifestFile.exists()){
-        def parsedManifest= (new XmlParser()).parse("${moduleFolder}/resources/manifest.xml")
-        parsedManifest.module[0].dependencies[0].dependency.each{ dep ->
-            moduleDependencies.add(dep.@name)
-        }
-        moduleVersion = parsedManifest.module[0].version[0].text()
-    }
-    def staticFolder=file("${moduleFolder}/static")
-    if (workplacelocalization!=null){
-        localeModules.add("${moduleName}")
-        preserveLibModules += "${moduleName},"
-    }
-
-    tasks.register("dist_$moduleName", Zip) {
-        ext.moduleName = moduleName
-        ext.moduleFolder = moduleFolder
-        ext.dependencies = moduleDependencies
-
-        if (project.hasProperty('noVersion')) {
-            archiveVersion = ""
-        } else {
-            archiveVersion = moduleVersion
-        }
-        destinationDirectory = modulesDistsDir
-
-        // excluding jars from modules, jars will be placed in the WEB-INF lib folder through the moduleDeps configuration
-        from("${moduleFolder}/resources"){
-            exclude '**/lib*/*.jar'
-        }
-
-        // TODO: set the module version to match the manifest.xml
-        archiveBaseName = moduleName
-        group 'OpenCms module ZIPs'
-        doFirst {
-            println '======================================================'
-            println "Building ZIP for $moduleName version $moduleVersion"
-            println '======================================================'
-        }
-        doLast {
-            if (project.hasProperty('module_copy_target') && file(module_copy_target).exists()){
-                println "copying ${layout.buildDirectory.dir("modulesZip").get().file(archiveName).asFile} to ${module_copy_target}"
-                copy {
-                    from  layout.buildDirectory.dir("modulesZip").get().file(archiveName).asFile
-                    into module_copy_target
-                }
-            }
-        }
-    }
-    if (workplacelocalization != null){
-        tasks.register("jar_$moduleName", Jar) {
-            ext.moduleName = moduleName
-            ext.workplacelocalization=workplacelocalization
-            manifest {
-                attributes 'Implementation-Title': 'Alkacon OpenCms', 'Implementation-Version': archiveVersion
-                if (workplacelocalization!=null) {
-                    attributes 'OpenCms-Localization': workplacelocalization
-                }
-            }
-            from ("$moduleFolder/resources/system/workplace/locales/$workplacelocalization/messages")
-            archiveFileName = moduleName+'.jar'
-            archiveBaseName = moduleName
-            group 'OpenCms module JARs'
-            exclude '**/.gitignore'
-            doFirst{
-                println '======================================================'
-                println "Building ${moduleName}.jar including $modulePackages"
-                println '======================================================'
-            }
-
-            doLast {
-                if (project.hasProperty('tomcat_update_target') && file(tomcat_update_target).exists()){
-                    println "copying ${layout.buildDirectory.dir("libs").get().file(archiveName).asFile} to ${tomcat_update_target}"
-                    copy {
-                        from  layout.buildDirectory.dir("libs").get().file(archiveName).asFile
-                        into tomcat_update_target
-                    }
-                }
-            }
-        }
-        tasks.named("dist_$moduleName") {
-            dependsOn tasks.named("jar_$moduleName")
-        }
-    }
-}
-
-tasks.register('allModules') {
-    dependsOn tasks.matching{ Task task -> task.name.startsWith('dist_')}
-    doLast {
-        println '======================================================'
-        println 'Done building modules'
-        println '======================================================'
-    }
-}
+// preserveLibModules and localeModules initialized via opencms.module-packaging
+// dist_ and jar_ tasks for modules moved to opencms.module-packaging.gradle.kts
+// allModules task moved to opencms.module-packaging.gradle.kts
 
 tasks.register('war', Zip) {
     dependsOn setupJar, resourcesJar, modulesJar, allModules

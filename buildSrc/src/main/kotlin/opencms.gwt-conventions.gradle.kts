@@ -148,6 +148,11 @@ tasks.register<Javadoc>("javadocGwt") {
     val sourceSets = project.extensions.getByType<SourceSetContainer>()
     val gwtSourceSet = sourceSets.getByName("gwt")
     
+    val ocmsVersion = project.extensions.extraProperties.let { 
+        if (it.has("ocmsVersion")) it.get("ocmsVersion") else project.version 
+    }
+    val javaTargetVersion = project.findProperty("java_target_version")?.toString() ?: "11"
+    
     doLast {
         project.copy {
             from("${project.projectDir}/doc/javadoc/logos")
@@ -161,8 +166,9 @@ tasks.register<Javadoc>("javadocGwt") {
         isAuthor = true
         isVersion = true
         links("false")
-        windowTitle = "OpenCms GWT Components API, version ${project.version}"
-        docTitle = "OpenCms GWT Components API, version ${project.version}"
+        source = javaTargetVersion
+        windowTitle = "OpenCms GWT Components API, version $ocmsVersion"
+        docTitle = "OpenCms GWT Components API, version $ocmsVersion"
         header = "<script type=\"text/javascript\"> if (window.location.href.indexOf(\"overview-frame\") == -1) { document.write(\"<a id=\\\"brandingLink\\\" target=\\\"_blank\\\" href=\\\"http://www.alkacon.com\\\"><img border=\\\"0\\\" id=\\\"brandingPic\\\" src=\\\"{@docRoot}/logos/Alkacon.svg\\\" /></a>\"); } else { document.write(\"<a id=\\\"brandingLink\\\" target=\\\"_blank\\\" href=\\\"http://www.opencms.com\\\"><img border=\\\"0\\\" id=\\\"brandingPic\\\" src=\\\"{@docRoot}/logos/OpenCms.svg\\\" /></a>\"); }</script>"
     }
     source = gwtSourceSet.allJava

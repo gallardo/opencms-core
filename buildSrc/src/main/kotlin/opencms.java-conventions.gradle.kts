@@ -234,12 +234,15 @@ tasks.register<Javadoc>("javadocSetup") {
         }
     }
 
+    val javaTargetVersion = project.findProperty("java_target_version")?.toString() ?: "11"
+
    (options as StandardJavadocDocletOptions).apply {
         memberLevel = JavadocMemberLevel.PROTECTED
         charSet = "UTF-8"
         isAuthor = true
         isVersion = true
         links("false")
+        source = javaTargetVersion
         windowTitle = "OpenCms Setup API, version ${project.version}"
         docTitle = "OpenCms Setup API, version ${project.version}"
         header = "<script type=\"text/javascript\"> if (window.location.href.indexOf(\"overview-frame\") == -1) { document.write(\"<a id=\\\"brandingLink\\\" target=\\\"_blank\\\" href=\\\"http://www.alkacon.com\\\"><img border=\\\"0\\\" id=\\\"brandingPic\\\" src=\\\"{@docRoot}/logos/Alkacon.svg\\\" /></a>\"); } else { document.write(\"<a id=\\\"brandingLink\\\" target=\\\"_blank\\\" href=\\\"http://www.opencms.com\\\"><img border=\\\"0\\\" id=\\\"brandingPic\\\" src=\\\"{@docRoot}/logos/OpenCms.svg\\\" /></a>\"); }</script>"
