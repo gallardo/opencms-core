@@ -12,6 +12,7 @@ plugins {
     id 'opencms.java-conventions'
     id 'opencms.testing-conventions'
     id 'opencms.gwt-conventions'
+    id 'opencms.ui-conventions'
     id 'maven-publish'
     id 'signing'
     id 'io.github.gradle-nexus.publish-plugin' version '2.0.0'
@@ -236,67 +237,7 @@ tasks.register('sourcesJarModules', Jar) {
 
 // GWT javadoc and sources moved to opencms.gwt-conventions.gradle.kts
 
-tasks.register('workplaceTheme', JavaExec) {
-    doFirst {
-        println '======================================================'
-        println "Building workplace theme"
-        println "Generating ${layout.buildDirectory.dir("workplaceThemes/opencms/styles.css").get().asFile}"
-        println '======================================================'
-        def dir = layout.buildDirectory.dir("workplaceThemes/opencms").get().asFile
-        if (dir.exists()){
-            delete(dir)
-        }
-        dir.mkdirs()
-    }
-
-    mainClass = 'com.vaadin.sass.SassCompiler'
-
-    classpath {
-        [
-            sourceSets.gwt.compileClasspath
-        ]
-    }
-
-
-    args = [
-        "$projectDir/webapp/workplaceThemes/VAADIN/themes/opencms/styles.scss",
-        layout.buildDirectory.file("workplaceThemes/opencms/styles.css").get().asFile
-    ]
-    maxHeapSize = max_heap_size
-}
-tasks.register('opencmsFonts', JavaExec) {
-    doFirst {
-        println '======================================================'
-        println "Building OpenCms fonts CSS"
-        println "Generating ${layout.buildDirectory.dir("workplaceThemes/opencmsFonts/opencmsFonts.css").get().asFile}"
-        println '======================================================'
-        def dir = layout.buildDirectory.dir("workplaceThemes/opencmsFonts").get().asFile
-        if (dir.exists()){
-            delete(dir)
-        }
-        dir.mkdirs()
-    }
-
-    mainClass = 'com.vaadin.sass.SassCompiler'
-
-    classpath {
-        [
-            sourceSets.gwt.compileClasspath
-        ]
-    }
-
-    // opencmsFonts are generated into a different directory than the /opencms/styles.css
-    // to avoid conflicts or dependencies between the build tasks 'workplaceTheme' and 'opencmsFonts'
-    args = [
-        "$projectDir/webapp/workplaceThemes/VAADIN/themes/opencms/opencmsFonts.scss",
-        layout.buildDirectory.file("workplaceThemes/opencmsFonts/opencmsFonts.css").get().asFile
-    ]
-    maxHeapSize = max_heap_size
-}
-
-
 tasks.register('resourcesJar', Jar) {
-    dependsOn workplaceTheme, opencmsFonts
     doFirst {
         println '======================================================'
         println "Building Resources Jar"
