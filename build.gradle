@@ -11,6 +11,7 @@ buildscript {
 plugins {
     id 'opencms.java-conventions'
     id 'opencms.testing-conventions'
+    id 'opencms.gwt-conventions'
     id 'maven-publish'
     id 'signing'
     id 'io.github.gradle-nexus.publish-plugin' version '2.0.0'
@@ -185,26 +186,7 @@ tasks.register('sourcesJar', Jar) {
     archiveBaseName = 'opencms-core'
 }
 
-tasks.register('gwtJar', Jar) {
-    dependsOn jar
-    from sourceSets.gwt.output
-    from (sourceSets.gwt.java.srcDirs){ include '**/*.java' }
-    from (sourceSets.main.java.srcDirs){
-        include '**/shared/**'
-        include '**/gwt/CmsRpcException.java'
-        include '**/ade/detailpage/CmsDetailPageInfo.java'
-        include '**/db/CmsResourceState.java'
-        include '**/jsp/CmsContainerJsonKeys.java'
-        include '**/util/CmsPair.java'
-        include '**/util/CmsDefaultSet.java'
-        include '**/xml/content/CmsXmlContentProperty.java'
-        include '**/workplace/editors/CmsTinyMceToolbarHelper.java'
-    }
-    includeEmptyDirs false
-    archiveFileName = 'opencms-gwt.jar'
-    archiveBaseName = 'opencms-gwt'
-    exclude '**/.gitignore'
-}
+// gwtJar moved to opencms.gwt-conventions.gradle.kts
 
 tasks.register('modulesJar', Jar) {
     from sourceSets.modules.output
@@ -252,55 +234,7 @@ tasks.register('sourcesJarModules', Jar) {
     archiveBaseName = 'opencms-modules'
 }
 
-tasks.register('javadocGwt', Javadoc) {
-    dependsOn jar
-    doLast {
-        copy {
-            from  "${projectDir}/doc/javadoc/logos"
-            into layout.buildDirectory.dir("docs/javadocGwt/logos")
-        }
-    }
-
-    project.configure(options) {
-        memberLevel = org.gradle.external.javadoc.JavadocMemberLevel.PROTECTED
-        charSet = "UTF-8"
-        author="true"
-        version="true"
-        source= java_target_version
-        linkSource="false"
-        docTitle="OpenCms GWT Components API, version $ocmsVersion"
-        windowTitle="OpenCms GWT Components API, version $ocmsVersion"
-        header = "<script type=\"text/javascript\"> if (window.location.href.indexOf(\"overview-frame\") == -1) { document.write(\"<a id=\\\"brandingLink\\\" target=\\\"_blank\\\" href=\\\"http://www.alkacon.com\\\"><img border=\\\"0\\\" id=\\\"brandingPic\\\" src=\\\"{@docRoot}/logos/Alkacon.svg\\\" /></a>\"); } else { document.write(\"<a id=\\\"brandingLink\\\" target=\\\"_blank\\\" href=\\\"http://www.opencms.com\\\"><img border=\\\"0\\\" id=\\\"brandingPic\\\" src=\\\"{@docRoot}/logos/OpenCms.svg\\\" /></a>\"); }</script>"
-    }
-    source = sourceSets.gwt.allJava
-    classpath = project.sourceSets.gwt.compileClasspath
-    destinationDir = layout.buildDirectory.dir("docs/javadocGwt").get().asFile
-}
-
-tasks.register('javadocJarGwt', Jar) {
-    dependsOn javadocGwt
-    archiveClassifier = 'javadoc'
-    from layout.buildDirectory.dir("docs/javadocGwt")
-    archiveBaseName = 'opencms-gwt'
-}
-
-tasks.register('sourcesJarGwt', Jar) {
-    from sourceSets.gwt.java.srcDirs
-    from (sourceSets.main.java.srcDirs){
-        include '**/shared/**'
-        include '**/gwt/CmsRpcException.java'
-        include '**/ade/detailpage/CmsDetailPageInfo.java'
-        include '**/db/CmsResourceState.java'
-        include '**/jsp/CmsContainerJsonKeys.java'
-        include '**/util/CmsPair.java'
-        include '**/util/CmsDefaultSet.java'
-        include '**/xml/content/CmsXmlContentProperty.java'
-        include '**/workplace/editors/CmsTinyMceToolbarHelper.java'
-    }
-    includeEmptyDirs false
-    archiveClassifier = 'sources'
-    archiveBaseName = 'opencms-gwt'
-}
+// GWT javadoc and sources moved to opencms.gwt-conventions.gradle.kts
 
 tasks.register('workplaceTheme', JavaExec) {
     doFirst {
@@ -361,10 +295,6 @@ tasks.register('opencmsFonts', JavaExec) {
 }
 
 
-Properties gwtProps = new Properties()
-gwtProps.load(new FileInputStream("$projectDir/src-gwt/gwt-modules.properties"))
-project.ext.gwtModuleNames = gwtProps['gwtmodules']
-
 tasks.register('resourcesJar', Jar) {
     dependsOn workplaceTheme, opencmsFonts
     doFirst {
@@ -389,19 +319,6 @@ tasks.register('resourcesJar', Jar) {
     from (layout.buildDirectory.dir("workplaceThemes/opencmsFonts")){
         into 'VAADIN/themes/opencms'
     }
-    gwtModuleNames.split(',').each{ gwtModule ->
-        if (!'org.opencms.ui.WidgetSet'.equals(gwtModule)){
-            from(layout.buildDirectory.dir("gwt/${gwtModule}")) {
-                exclude '**/WEB-INF/**'
-                into "OPENCMS/gwt"
-            }
-        }
-    }
-
-    from (layout.buildDirectory.dir("gwt/org.opencms.ui.WidgetSet")){
-        include 'org.opencms.ui.WidgetSet/**'
-        into 'VAADIN/widgetsets'
-    }
 
     doLast {
         if (project.hasProperty('tomcat_update_target') && file(tomcat_update_target).exists()){
@@ -414,101 +331,7 @@ tasks.register('resourcesJar', Jar) {
     }
 }
 
-// iterate gwt modules and create the required tasks
-gwtModuleNames.split(',').each{ gwtModule ->
-    tasks.register("gwt_${gwtModule}", JavaExec) {
-        dependsOn gwtClasses
-        ext.buildDir =  layout.buildDirectory.dir("gwt/${gwtModule}").get().asFile.toString()
-        ext.extraDir =  layout.buildDirectory.dir("extra/${gwtModule}").get().asFile.toString()
-        inputs.files sourceSets.gwt.java.srcDirs
-        inputs.dir sourceSets.gwt.output.resourcesDir
-        outputs.dir buildDir
-
-        // Workaround for incremental build (GRADLE-1483)
-        outputs.upToDateSpec = new org.gradle.api.specs.AndSpec()
-
-        doFirst {
-            println '======================================================'
-            println "Building GWT resources for ${gwtModule}"
-            println '======================================================'
-            // to clean the output directory, delete it first
-            def dir = file(buildDir)
-            if (dir.exists()){
-                delete(dir)
-            }
-            dir.mkdirs()
-        }
-
-        mainClass = 'com.google.gwt.dev.Compiler'
-
-        classpath {
-            [
-                // Java source core
-                sourceSets.main.java.srcDirs,
-                // Java source gwt
-                sourceSets.gwt.java.srcDirs,
-                // Java source modules
-                sourceSets.modules.java.srcDirs,
-                // Generated resources
-                sourceSets.gwt.output.resourcesDir,
-                // Generated classes
-                sourceSets.gwt.java.classesDirectory,
-                // Dependecies
-                sourceSets.gwt.compileClasspath,
-            ]
-        }
-
-
-        if (project.hasProperty('gwtDraft')) {
-            println "Using GWT draft mode for module $gwtModule"
-            args =
-                    [
-                        gwtModule,
-                        // Your GWT module
-                        '-war',
-                        buildDir,
-                        '-logLevel',
-                        'ERROR',
-                        '-localWorkers',
-                        '2',
-                        '-style',
-                        'obfuscated',
-                        '-extra',
-                        extraDir,
-                        '-draftCompile',
-                        // Speeds up compile with 25%
-                        '-setProperty',
-                        'locale=en'
-                    ]
-        } else {
-            args =
-                    [
-                        gwtModule,
-                        // Your GWT module
-                        '-war',
-                        buildDir,
-                        '-logLevel',
-                        'ERROR',
-                        '-localWorkers',
-                        '2',
-                        '-style',
-                        'obfuscated',
-                        '-extra',
-                        extraDir,
-                        '-strict'
-                    ]
-        }
-        jvmArgs = [
-            '-Dgwt.jjs.permutationWorkerFactory=com.google.gwt.dev.ThreadedPermutationWorkerFactory'
-        ]
-
-        maxHeapSize = max_heap_size
-    }
-
-    tasks.named('resourcesJar') {
-        dependsOn tasks.named("gwt_${gwtModule}")
-    }
-}
+// GWT module task generation loop moved to opencms.gwt-conventions.gradle.kts
 
 
 
