@@ -29,5 +29,9 @@ gradlePlugin {
             id = "opencms.java-conventions"
             implementationClass = "org.opencms.gradle.JavaConventionsPlugin"
         }
+        register("testingConventions") {
+            id = "opencms.testing-conventions"
+            implementationClass = "org.opencms.gradle.TestingConventionsPlugin"
+        }
     }
 }

@@ -81,7 +81,6 @@ abstract class OpenCmsExtension @Inject constructor(private val project: Project
 
         productVersion.convention(resolvedVersion)
         
-        // Use the helper property to check for existence
         useExternalVersion.convention(externalVersionFile.exists())
 
         // Sync the official project version with the resolved OpenCms version
@@ -100,7 +99,7 @@ abstract class OpenCmsExtension @Inject constructor(private val project: Project
         addJavadoc.convention(!skipJavadoc)
 
         // Resolve Max Heap Size
-        val maxHeap = project.findProperty("max_heap_size")?.toString() ?: "1024m"
+        val maxHeap = project.findProperty("max_heap_size")?.toString() ?: "2000m"
         maxHeapSize.convention(maxHeap)
     }
 
@@ -110,7 +109,7 @@ abstract class OpenCmsExtension @Inject constructor(private val project: Project
     private fun loadVersionProperties(): Properties {
         val props = Properties()
         
-        // Use the helper property here as well
+        // Prefer external file (above build directory)
         val propFile = if (externalVersionFile.exists()) {
             externalVersionFile
         } else {
