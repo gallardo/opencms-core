@@ -10,18 +10,22 @@ import org.gradle.external.javadoc.StandardJavadocDocletOptions
 import org.gradle.external.javadoc.JavadocMemberLevel
 import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.plugins.ide.eclipse.model.EclipseModel
-import org.gradle.api.JavaVersion
 import org.gradle.kotlin.dsl.*
 
 /**
  * Hardened Java Conventions Plugin for OpenCms.
  * 
  * Replaces 'opencms.java-conventions.gradle.kts' with a formal Kotlin class.
+ * The core configuration logic is handled by the self-initializing 'opencms' extension.
  */
 class JavaConventionsPlugin : Plugin<Project> {
 
     override fun apply(project: Project) {
-        val extension = registerExtension(project)
+        // Ensure the base plugin is applied, which registers the 'opencms' extension
+        project.plugins.apply(OpenCmsBasePlugin::class.java)
+        
+        // Get the extension already registered by the base plugin
+        val extension = project.extensions.getByType<OpenCmsExtension>()
         
         applyCorePlugins(project)
         configureRepositories(project)
@@ -30,10 +34,6 @@ class JavaConventionsPlugin : Plugin<Project> {
         configureConfigurations(project)
         configureEclipse(project)
         registerTasks(project, extension)
-    }
-
-    private fun registerExtension(project: Project): OpenCmsExtension {
-        return project.extensions.create<OpenCmsExtension>("opencms", project)
     }
 
     private fun applyCorePlugins(project: Project) {

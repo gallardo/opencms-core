@@ -21,6 +21,10 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
 
 gradlePlugin {
     plugins {
+        register("base") {
+            id = "opencms.base"
+            implementationClass = "org.opencms.gradle.OpenCmsBasePlugin"
+        }
         register("javaConventions") {
             id = "opencms.java-conventions"
             implementationClass = "org.opencms.gradle.JavaConventionsPlugin"

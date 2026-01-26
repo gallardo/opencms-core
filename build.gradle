@@ -8,6 +8,7 @@ buildscript {
 }
 
 plugins {
+    id 'opencms.base'
     id 'opencms.java-conventions'
     id 'opencms.testing-conventions'
     id 'opencms.gwt-conventions'
@@ -38,37 +39,25 @@ nexusPublishing {
     }
 }
 
+// ----------------------------------------------------------------------------
+// Global Build Configuration
+// ----------------------------------------------------------------------------
 
-
-// use the same properties file as the OpenCms core does for the version information
-// please note that in a Jenkins CI build, this properties file should be dynamically generated
-def externalVersionProps = layout.buildDirectory.file("../version.properties").get().asFile
-def propFile;
-if (externalVersionProps.exists()){
-    println "Using external version properties file: $externalVersionProps"
-    propFile=externalVersionProps
-}else{
-    println 'Using internal version properties file'
-    propFile=file("$projectDir/src/org/opencms/main/version.properties")
-}
-
-Properties vprops = new Properties()
-vprops.load(new FileInputStream(propFile))
+// Most parameters (version, productName, javaVersion, maxHeapSize) are 
+// automatically resolved and initialized by the 'opencms' extension.
 opencms {
-    productVersion = opencms_version ?: vprops['version.number']
-    productName = product_name
-    javaVersion = JavaVersion.toVersion(java_target_version)
-    addJavadoc = !(project.hasProperty('skip_javadoc') && skip_javadoc.toBoolean())
+    // Add overrides here if necessary, e.g.:
+    // productName.set("My Custom CMS")
 }
 
-version = opencms.productVersion.get()
-
-// flag, indicating if javadoc should be skipped
+// Global script variables for backward compatibility
 boolean addJavadoc = opencms.addJavadoc.get()
-
-// alternative variable name for the case where the version variable is used for something else, e.g. javadoc
 ext.ocmsVersion = opencms.productVersion.get()
+ext.max_heap_size = opencms.maxHeapSize.get()
 
+// ----------------------------------------------------------------------------
+// Extra Project Setup
+// ----------------------------------------------------------------------------
 // deal with external modules project
 def extModulesProject = findProject(':extmodules')
 def hasExtModules = null != extModulesProject
@@ -78,13 +67,6 @@ if (hasExtModules) {
         ext.coreproject = ':'
     }
 }
-
-// Repositories applied via opencms.java-conventions
-
-if (project.hasProperty('max_heap_size')){
-    opencms.maxHeapSize.set(max_heap_size)
-}
-ext.max_heap_size = opencms.maxHeapSize.get()
 
 // allModuleNames and modulesDistsDir initialized via opencms.module-packaging
 
@@ -130,7 +112,7 @@ jar {
     exclude '**/overview.html'
     exclude '**/.gitignore'
 
-    if (externalVersionProps.exists()){
+    if (opencms.useExternalVersion.get()){
         exclude 'org/opencms/main/version.properties'
         from (layout.buildDirectory.dir("..")){
             include 'version.properties'
