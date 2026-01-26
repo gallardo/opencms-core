@@ -18,3 +18,12 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
         jvmTarget = "11"
     }
 }
+
+gradlePlugin {
+    plugins {
+        register("javaConventions") {
+            id = "opencms.java-conventions"
+            implementationClass = "org.opencms.gradle.JavaConventionsPlugin"
+        }
+    }
+}
