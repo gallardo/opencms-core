@@ -41,5 +41,9 @@ gradlePlugin {
             id = "opencms.ui-conventions"
             implementationClass = "org.opencms.gradle.UiConventionsPlugin"
         }
+        register("modulePackaging") {
+            id = "opencms.module-packaging"
+            implementationClass = "org.opencms.gradle.ModulePackagingPlugin"
+        }
     }
 }
