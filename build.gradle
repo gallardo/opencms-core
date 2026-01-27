@@ -112,24 +112,7 @@ tasks.register('tlddocZip', Zip) {
 
 
 
-tasks.register('testGwt', Test) {
-    dependsOn compileTestGwtJava
-    classpath=sourceSets.testGwt.runtimeClasspath
-    classpath += files("${projectDir}/src")
-    classpath += files("${projectDir}/src-gwt")
-    classpath += files("${projectDir}/test-gwt")
-    useJUnit()
-    filter {
-        includeTestsMatching 'org.opencms.client.test.AllTests'
-    }
-    scanForTestClasses false
-    testClassesDirs = files(sourceSets.testGwt.java.classesDirectory)
-    systemProperties['gwt.args'] = "-logLevel WARN -setProperty locale=en"
-    systemProperties['java.awt.headless'] = "true"
-    maxHeapSize = max_heap_size
-    testLogging.showStandardStreams = true
-    ignoreFailures true
-}
+// testGwt task moved to GwtConventionsPlugin.kt
 
 artifacts {
     archives sourcesJar

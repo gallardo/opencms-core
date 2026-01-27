@@ -8,6 +8,7 @@ import org.gradle.api.tasks.bundling.Jar
 import org.gradle.api.tasks.javadoc.Javadoc
 import org.gradle.external.javadoc.StandardJavadocDocletOptions
 import org.gradle.external.javadoc.JavadocMemberLevel
+import org.gradle.api.tasks.testing.Test
 import org.gradle.kotlin.dsl.*
 import java.io.FileInputStream
 import java.util.Properties
@@ -38,6 +39,7 @@ class GwtConventionsPlugin : Plugin<Project> {
 
         registerGwtModuleTasks(project, extension, gwtModuleNames)
         registerGwtArtifactTasks(project, extension)
+        registerTestGwtTask(project, extension)
     }
     
     /**
@@ -206,11 +208,12 @@ class GwtConventionsPlugin : Plugin<Project> {
                     charSet = "UTF-8"
                     isAuthor = true
                     isVersion = true
-                    links("false")
                     source = extension.javaVersion.get().toString()
-                    windowTitle = "OpenCms GWT Components API, version ${extension.productVersion.get()}"
+                    isLinkSource = false
                     docTitle = "OpenCms GWT Components API, version ${extension.productVersion.get()}"
+                    windowTitle = "OpenCms GWT Components API, version ${extension.productVersion.get()}"
                     header = "<script type=\"text/javascript\"> if (window.location.href.indexOf(\"overview-frame\") == -1) { document.write(\"<a id=\\\"brandingLink\\\" target=\\\"_blank\\\" href=\\\"http://www.alkacon.com\\\"><img border=\\\"0\\\" id=\\\"brandingPic\\\" src=\\\"{@docRoot}/logos/Alkacon.svg\\\" /></a>\"); } else { document.write(\"<a id=\\\"brandingLink\\\" target=\\\"_blank\\\" href=\\\"http://www.opencms.com\\\"><img border=\\\"0\\\" id=\\\"brandingPic\\\" src=\\\"{@docRoot}/logos/OpenCms.svg\\\" /></a>\"); }</script>"
+                    isUse = true
                 }
             }
 
@@ -238,6 +241,40 @@ class GwtConventionsPlugin : Plugin<Project> {
                 archiveClassifier.set("sources")
                 archiveBaseName.set("opencms-gwt")
             }
+        }
+    }
+
+    /**
+     * Registers the 'testGwt' task for running GWT unit tests.
+     */
+    private fun registerTestGwtTask(project: Project, extension: OpenCmsExtension) {
+        val sourceSets = project.extensions.getByType<SourceSetContainer>()
+        val testGwtSourceSet = sourceSets.getByName("testGwt")
+
+        project.tasks.register<Test>("testGwt") {
+            dependsOn("compileTestGwtJava")
+            
+            classpath = testGwtSourceSet.runtimeClasspath
+            // Add source directories to classpath as GWT tests often need them
+            classpath += project.files(
+                "${project.projectDir}/src",
+                "${project.projectDir}/src-gwt",
+                "${project.projectDir}/test-gwt"
+            )
+
+            useJUnit()
+            filter {
+                includeTestsMatching("org.opencms.client.test.AllTests")
+            }
+            setScanForTestClasses(false)
+            testClassesDirs = project.files(testGwtSourceSet.java.classesDirectory)
+            
+            systemProperty("gwt.args", "-logLevel WARN -setProperty locale=en")
+            systemProperty("java.awt.headless", "true")
+            maxHeapSize = extension.maxHeapSize.get()
+            
+            testLogging.showStandardStreams = true
+            ignoreFailures = true
         }
     }
 }
