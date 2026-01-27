@@ -45,5 +45,9 @@ gradlePlugin {
             id = "opencms.module-packaging"
             implementationClass = "org.opencms.gradle.ModulePackagingPlugin"
         }
+        register("distributionConventions") {
+            id = "opencms.distribution-conventions"
+            implementationClass = "org.opencms.gradle.DistributionConventionsPlugin"
+        }
     }
 }
