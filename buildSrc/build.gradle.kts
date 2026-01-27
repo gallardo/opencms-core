@@ -7,6 +7,12 @@ repositories {
     gradlePluginPortal()
 }
 
+dependencies {
+    // This is the plugin `com.liferay.tlddoc.builder` required for the `tlddoc` task
+    api("gradle.plugin.com.liferay:gradle-plugins-tlddoc-builder:2.0.1")
+}
+
+
 
 java {
     sourceCompatibility = JavaVersion.VERSION_11

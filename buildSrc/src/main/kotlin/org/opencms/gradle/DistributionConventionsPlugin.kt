@@ -26,10 +26,12 @@ class DistributionConventionsPlugin : Plugin<Project> {
         val extension = project.extensions.getByType<OpenCmsExtension>()
         
         project.plugins.apply("java-library")
+        project.plugins.apply("com.liferay.tlddoc.builder")
 
         registerWarTask(project, extension)
         registerUpdaterTask(project, extension)
         registerBinDistTask(project, extension)
+        configureTlddoc(project)
     }
 
     private fun registerWarTask(project: Project, extension: OpenCmsExtension) {
@@ -307,6 +309,42 @@ class DistributionConventionsPlugin : Plugin<Project> {
                 include("README.md")
                 include("history.txt")
                 filter(ReplaceTokens::class, "tokens" to getBaseTokens(project, extension))
+            }
+        }
+    }
+
+    /**
+     * Configures tlddoc generation and packaging.
+     */
+    private fun configureTlddoc(project: Project) {
+        // Use afterEvaluate to ensure the extension is registered by the time we configure it
+        // TODO: Review if this configuration is still necessary or if it can be simplified.
+        // The original Groovy code 'tlddoc { source ... }' might be legacy.
+        project.afterEvaluate {
+            val tlddocExt = extensions.findByName("tlddoc")
+            if (tlddocExt is org.gradle.api.plugins.ExtensionAware) {
+                // In Groovy: tlddoc { source 'webapp/WEB-INF/opencms.tld' }
+                // We try to find a 'source' property or use the dynamic API
+                try {
+                    tlddocExt.extensions.extraProperties.set("source", "webapp/WEB-INF/opencms.tld")
+                } catch (e: Exception) {
+                    project.logger.warn("OpenCms: Failed to set tlddoc source via extension: ${e.message}")
+                }
+            }
+        }
+
+        // Migrate tlddocZip task
+        project.tasks.register<Zip>("tlddocZip") {
+            dependsOn("tlddoc")
+            archiveFileName.set("tld.zip")
+            val docsDir = project.layout.buildDirectory.dir("docs")
+            from(docsDir.map { it.dir("tlddoc") }) {
+                include("**/*")
+            }
+            destinationDirectory.set(docsDir)
+            
+            doFirst {
+                println("Creating tlddoc ZIP from ${docsDir.get().asFile}/tlddoc")
             }
         }
     }

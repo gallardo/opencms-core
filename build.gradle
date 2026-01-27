@@ -18,7 +18,7 @@ plugins {
     id 'maven-publish'
     id 'signing'
     id 'io.github.gradle-nexus.publish-plugin' version '2.0.0'
-    id 'com.liferay.tlddoc.builder' version '2.0.1'
+// tlddoc plugin moved to DistributionConventionsPlugin.kt
 }
 
 group = "org.opencms"
@@ -86,19 +86,7 @@ wrapper {
 
 // Setup tasks applied via opencms.java-conventions
 
-tlddoc {
-    source 'webapp/WEB-INF/opencms.tld'
-}
-
-
-tasks.register('tlddocZip', Zip) {
-    dependsOn tlddoc
-    archiveFileName = 'tld.zip'
-    from ("${project.docsDir}/tlddoc/") {
-        include '**/*'
-    }
-    destinationDirectory = file("${project.docsDir}")
-}
+// tlddoc configuration and tlddocZip task moved to DistributionConventionsPlugin.kt
 
 
 
