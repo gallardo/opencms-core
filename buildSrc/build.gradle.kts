@@ -33,5 +33,9 @@ gradlePlugin {
             id = "opencms.testing-conventions"
             implementationClass = "org.opencms.gradle.TestingConventionsPlugin"
         }
+        register("gwtConventions") {
+            id = "opencms.gwt-conventions"
+            implementationClass = "org.opencms.gradle.GwtConventionsPlugin"
+        }
     }
 }
