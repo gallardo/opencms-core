@@ -58,15 +58,7 @@ ext.max_heap_size = opencms.maxHeapSize.get()
 // ----------------------------------------------------------------------------
 // Extra Project Setup
 // ----------------------------------------------------------------------------
-// deal with external modules project
-def extModulesProject = findProject(':extmodules')
-def hasExtModules = null != extModulesProject
-if (hasExtModules) {
-    println 'Adding coreproject property to subprojects.'
-    subprojects {
-        ext.coreproject = ':'
-    }
-}
+// hasExtModules and subprojects coreproject setup moved to OpenCmsBasePlugin.kt
 
 // allModuleNames and modulesDistsDir initialized via opencms.module-packaging
 

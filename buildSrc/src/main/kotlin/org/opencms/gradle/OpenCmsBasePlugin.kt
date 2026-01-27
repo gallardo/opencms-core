@@ -13,7 +13,14 @@ import org.gradle.kotlin.dsl.create
 class OpenCmsBasePlugin : Plugin<Project> {
     override fun apply(project: Project) {
         // Register the self-initializing extension
-        // Any other plugin that needs 'opencms { }' will apply this plugin first.
-        project.extensions.create<OpenCmsExtension>("opencms", project)
+        val extension = project.extensions.create<OpenCmsExtension>("opencms", project)
+
+        // Only the root project needs to coordinate with subprojects for :extmodules
+        if (project == project.rootProject && extension.hasExtModules) {
+            project.logger.lifecycle("Adding coreproject property to subprojects (found :extmodules).")
+            project.subprojects {
+                extensions.extraProperties.set("coreproject", ":")
+            }
+        }
     }
 }

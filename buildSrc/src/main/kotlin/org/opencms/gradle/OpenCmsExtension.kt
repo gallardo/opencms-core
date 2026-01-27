@@ -67,6 +67,12 @@ abstract class OpenCmsExtension @Inject constructor(private val project: Project
     abstract val useExternalVersion: Property<Boolean>
 
     /**
+     * Whether an external modules project (:extmodules) is present in the multi-project build.
+     */
+    val hasExtModules: Boolean
+        get() = project.findProject(":extmodules") != null
+
+    /**
      * The location where an external version.properties file is expected.
      */
     private val externalVersionFile: File
