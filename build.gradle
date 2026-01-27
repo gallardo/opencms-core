@@ -69,12 +69,7 @@ ext.max_heap_size = opencms.maxHeapSize.get()
 
 // import dependencies
 apply from: 'dependencies.gradle'
-if (project.hasProperty('external_directories')){
-    dependencies{
-        moduleDeps fileTree(dir: external_directories).matching { include '**/lib/*.jar' }
-        moduleDeps fileTree(dir: external_directories).matching { include '**/libext/*.jar' }
-    }
-}
+// external_directories logic moved to JavaConventionsPlugin.kt
 
 // Eclipse classpath config applied via opencms.java-conventions
 
@@ -84,122 +79,7 @@ wrapper {
 
 // copyDeps tasks applied via opencms.java-conventions
 
-// Task from the java plugin
-jar {
-    manifest {
-        attributes 'Implementation-Title': 'Alkacon OpenCms',
-        'Implementation-Version': archiveVersion,
-        'Build-Time': new java.util.Date().format("yyyy-MM-dd HH:mm:ss"),
-        'OpenCms-Localization': 'en'
-    }
-    archiveBaseName = 'opencms-core'
-    archiveFileName = 'opencms.jar'
-    group 'OpenCms core JARs'
-
-    include 'org/opencms/**'
-    include 'org/vaadin/risto/**'
-    include 'com/**'
-    include 'META-INF/**'
-    exclude '**/package.html'
-    exclude '**/overview.html'
-    exclude '**/.gitignore'
-
-    if (opencms.useExternalVersion.get()){
-        exclude 'org/opencms/main/version.properties'
-        from (layout.buildDirectory.dir("..")){
-            include 'version.properties'
-            into 'org/opencms/main'
-        }
-    }
-
-    metaInf {
-        from("${projectDir}/webapp/WEB-INF/opencms.tld")
-    }
-
-    doLast {
-        if (project.hasProperty('tomcat_update_target') && file(tomcat_update_target).exists()){
-            println "copying ${layout.buildDirectory.dir("libs").get().file(archiveName).asFile} to ${tomcat_update_target}"
-            copy {
-                from  layout.buildDirectory.dir("libs").get().file(archiveName).asFile
-                into tomcat_update_target
-            }
-        }
-    }
-}
-
-// Task from the java plugin
-javadoc {
-    classpath += sourceSets.gwt.compileClasspath
-    doLast {
-        copy {
-            from  "${projectDir}/doc/javadoc/logos"
-            into layout.buildDirectory.dir("docs/javadoc/logos")
-        }
-    }
-
-    project.configure(options) {
-        memberLevel = org.gradle.external.javadoc.JavadocMemberLevel.PROTECTED
-        charSet = "UTF-8"
-        author="true"
-        version="true"
-        source= java_target_version
-        linkSource="false"
-        overview="${sourceSets.main.output.resourcesDir}/org/opencms/main/overview.html"
-        docTitle="OpenCms Core API, version $ocmsVersion"
-        windowTitle="OpenCms Core API, version $ocmsVersion"
-        header = "<script type=\"text/javascript\"> if (window.location.href.indexOf(\"overview-frame\") == -1) { document.write(\"<a id=\\\"brandingLink\\\" target=\\\"_blank\\\" href=\\\"http://www.alkacon.com\\\"><img border=\\\"0\\\" id=\\\"brandingPic\\\" src=\\\"{@docRoot}/logos/Alkacon.svg\\\" /></a>\"); } else { document.write(\"<a id=\\\"brandingLink\\\" target=\\\"_blank\\\" href=\\\"http://www.opencms.com\\\"><img border=\\\"0\\\" id=\\\"brandingPic\\\" src=\\\"{@docRoot}/logos/OpenCms.svg\\\" /></a>\"); }</script>"
-        use="true"
-    }
-}
-
-tasks.register('javadocJar', Jar) {
-    dependsOn javadoc
-    archiveClassifier = 'javadoc'
-    from layout.buildDirectory.dir("docs/javadoc")
-    archiveBaseName = 'opencms-core'
-}
-
-tasks.register('sourcesJar', Jar) {
-    from sourceSets.main.java.srcDirs
-    archiveClassifier = 'sources'
-    archiveBaseName = 'opencms-core'
-}
-
-
-tasks.register('resourcesJar', Jar) {
-    doFirst {
-        println '======================================================'
-        println "Building Resources Jar"
-        println '======================================================'
-    }
-    archiveBaseName = 'opencms-resources'
-    archiveFileName = 'opencms-resources.jar'
-    group 'OpenCms core JARs'
-    allModuleNames.each{ moduleName ->
-        from ("${projectDir}/modules/${moduleName}/static"){
-            into "OPENCMS"
-        }
-    }
-    from ("${projectDir}/webapp/workplaceThemes"){
-        exclude '**/*.scss'
-    }
-    from (layout.buildDirectory.dir("workplaceThemes/opencms")){
-        into 'VAADIN/themes/opencms'
-    }
-    from (layout.buildDirectory.dir("workplaceThemes/opencmsFonts")){
-        into 'VAADIN/themes/opencms'
-    }
-
-    doLast {
-        if (project.hasProperty('tomcat_update_target') && file(tomcat_update_target).exists()){
-            println "copying ${layout.buildDirectory.dir("libs").get().file(archiveName).asFile} to ${tomcat_update_target}"
-            copy {
-                from  layout.buildDirectory.dir("libs").get().file(archiveName).asFile
-                into tomcat_update_target
-            }
-        }
-    }
-}
+// Core JAR, Javadoc and Resources tasks moved to JavaConventionsPlugin.kt
 
 
 
@@ -534,17 +414,7 @@ tasks.withType(JavaCompile) {
     options.encoding='UTF-8'
     options.incremental = true
 }
-tasks.withType(Javadoc) {
-    options.addStringOption("sourcepath", "")
-    if (JavaVersion.current().isJava8Compatible()) {
-        options.addStringOption("Xdoclint:none", "-quiet")
-        options.addBooleanOption("-allow-script-in-comments",true);
-    }
-    doLast {
-        def searchScript = new File(destinationDir.getAbsolutePath() + '/search.js')
-        searchScript.append "getURLPrefix = function(ui) { return ''; };"
-    }
-}
+// Global Javadoc settings moved to JavaConventionsPlugin.kt
 // all tasks implementing the CopySpec (Copy,Jar,Zip,...) should fail, in case they generate duplicate files
 tasks.withType(CopySpec) {
     duplicatesStrategy 'fail'

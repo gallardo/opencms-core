@@ -40,6 +40,16 @@ class ModulePackagingPlugin : Plugin<Project> {
 
         registerGeneralModuleTasks(project, extension)
         registerPerModuleTasks(project, extension, allModuleNames, modulesDistsDir)
+
+        // Contribute module static resources to the global resourcesJar (if it exists)
+        project.tasks.matching { it.name == "resourcesJar" }.configureEach {
+            val jarTask = this as Jar
+            allModuleNames.forEach { moduleName ->
+                jarTask.from("${project.projectDir}/modules/${moduleName}/static") {
+                    into("OPENCMS")
+                }
+            }
+        }
     }
 
     private fun registerGeneralModuleTasks(project: Project, extension: OpenCmsExtension) {
