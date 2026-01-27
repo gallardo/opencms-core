@@ -37,5 +37,9 @@ gradlePlugin {
             id = "opencms.gwt-conventions"
             implementationClass = "org.opencms.gradle.GwtConventionsPlugin"
         }
+        register("uiConventions") {
+            id = "opencms.ui-conventions"
+            implementationClass = "org.opencms.gradle.UiConventionsPlugin"
+        }
     }
 }
